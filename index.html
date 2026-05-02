@@ -663,7 +663,7 @@ function staffCard(s){
   const crPill=bld!==null?`<div class="cr-pill ${pillCls(bld)}">${bld}%</div>`:'';
   const pStars=[1,2,3,4,5].map(n=>`<span class="pstar ${rating>=n?'on':''}">★</span>`).join('');
   const trendEl=trend?`<div class="tc tc-${trend.dir}">${trend.dir==='up'?'↑':trend.dir==='down'?'↓':'→'} ${trend.lbl}</div>`:'';
-  const splitEl=fC!==null&&bC!==null?`<div class="sc-split"><div class="sc-si"><div class="sc-sv">${fC}%</div><div class="sc-sl">Formal</div></div><div class="sc-div"></div><div class="sc-si"><div class="sc-sv">${bC}%</div><div class="sc-sl">Bridal</div></div></div>`:bld===null?`<div style="font-size:10px;color:var(--taupe);margin-top:6px;">No data yet</div>`:'';
+  const splitEl=fC!==null&&bC!==null?`<div class="sc-split"><div class="sc-si"><div class="sc-sv">${fC}%</div><div class="sc-sl">Formal</div></div><div class="sc-div"></div><div class="sc-si"><div class="sc-sv">${bC}%</div><div class="sc-sl">Bridal</div></div></div>`:fC!==null?`<div style="margin-top:7px;"><div class="sc-sv">${fC}%</div><div class="sc-sl" style="font-size:9px;color:var(--taupe);text-transform:uppercase;letter-spacing:.06em;">Formal</div></div>`:bC!==null?`<div style="margin-top:7px;"><div class="sc-sv">${bC}%</div><div class="sc-sl" style="font-size:9px;color:var(--taupe);text-transform:uppercase;letter-spacing:.06em;">Bridal</div></div>`:bld===null?`<div style="font-size:10px;color:var(--taupe);margin-top:6px;">No data yet</div>`:'';
   return `<div class="sc" onclick="openProfile('${s.id}')">
     <div class="sc-photo">${photoEl}${crPill}<div class="pvt-stars">${pStars}</div></div>
     <div class="sc-info"><div class="sc-name">${s.name}</div><div class="sc-role">${s.role||'Stylist'}</div>${splitEl}${trendEl}</div>
