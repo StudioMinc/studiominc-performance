@@ -1805,8 +1805,8 @@ async function syncSupa(){
         lostReasons:{}
       };
       const d=byStaff[sName];
-      const isFormal=!a.type||a.type==='formal';
-      const isBridal=a.type&&a.type!=='formal';
+      const isFormal=!a.type||a.type.toLowerCase()==='formal';
+      const isBridal=a.type&&a.type.toLowerCase()!=='formal';
       const isSold=a.outcome==='P';
       const isLost=a.outcome&&a.outcome!=='P'&&a.outcome!=='NS'&&a.outcome!=='CX';
 
