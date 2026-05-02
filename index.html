@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Minc — Staff Performance</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --cream:#FAF8F4; --bone:#F2EFE8; --linen:#E8E2D9;
+  --taupe:#C4BAA8; --warm:#8C7E6A; --deep:#3D3329; --ink:#1C1710;
+  --sage:#5C7055; --gold:#C9A84C; --gold-l:#F0E4C0;
+  --danger:#C45050; --danger-l:#F5E0E0;
+  /* functional colours */
+  --bg:#FAF8F4; --white:#FFFFFF; --black:#1C1710;
+  --grey1:#F2EFE8; --grey2:#E8E2D9; --grey3:#C4BAA8;
+  --grey4:#8C7E6A; --grey5:#3D3329; --grey6:#1C1710;
+  --border:1px solid #E8E2D9;
+  --ex:#5C7055; --ex-l:#E8F3E8;
+  --gd:#8A7000; --gd-l:#FFF4D9;
+  --nw:#C45050; --nw-l:#F5E0E0;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;font-size:13px;}
+
+/* NAV */
+.nav{background:var(--black);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:300;}
+.nav-brand{font-family:'Century Gothic','CenturyGothic','AppleGothic',sans-serif;font-size:13px;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--white);cursor:pointer;}
+.nav-brand em{font-family:'Century Gothic','CenturyGothic','AppleGothic',sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#888;margin-left:12px;font-style:normal;}
+.nav-r{display:flex;align-items:center;gap:8px;}
+.nb{padding:6px 14px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;font-family:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.25);background:transparent;color:var(--white);transition:all .15s;}
+.nb:hover{background:rgba(255,255,255,.1);}
+.nb-gold{background:white;border-color:var(--white);color:var(--black);}
+.nb-gold:hover{background:#e0e0e0;}
+.nav-month select,.nav-month input{padding:5px 8px;border:1px solid rgba(255,255,255,.2);font-size:11px;font-family:inherit;background:rgba(255,255,255,.07);color:var(--white);letter-spacing:.04em;}
+.nav-month select option{background:#111;}
+.nav-month{display:flex;align-items:center;gap:6px;}
+
+/* PAGES */
+.page{display:none;}
+.page.on{display:block;}
+
+/* ══════════════════════════════
+   HOME PAGE
+══════════════════════════════ */
+.home-wrap{padding:30px 32px 80px;}
+.home-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:30px;}
+.home-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;}
+.home-sub{font-size:11px;color:var(--warm);margin-top:4px;}
+.showroom-sec{margin-bottom:36px;}
+.showroom-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.showroom-nm{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--warm);white-space:nowrap;}
+.showroom-ln{flex:1;height:1px;background:var(--linen);}
+.showroom-meta{font-size:11px;color:var(--taupe);white-space:nowrap;}
+.cards-row{display:flex;flex-wrap:wrap;gap:14px;}
+
+/* STAFF CARD */
+.sc{width:148px;border-radius:12px;overflow:hidden;background:white;border:1px solid var(--linen);cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s;flex-shrink:0;}
+.sc:hover{transform:translateY(-4px);box-shadow:0 10px 26px rgba(28,23,16,.1);border-color:var(--taupe);}
+.sc-photo{width:100%;height:148px;background:var(--bone);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.sc-photo img{width:100%;height:100%;object-fit:cover;}
+.sc-ini{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:300;color:var(--taupe);}
+.cr-pill{position:absolute;bottom:7px;left:7px;font-size:12px;font-weight:500;padding:3px 9px;border-radius:20px;color:white;}
+.p-ex{background:rgba(92,112,85,.92);}
+.p-gd{background:rgba(138,112,0,.88);}
+.p-nw{background:rgba(196,80,80,.9);}
+.p-none{background:rgba(28,23,16,.45);}
+.pvt-stars{position:absolute;top:7px;right:7px;display:flex;gap:1px;opacity:0;transition:opacity .18s;}
+.sc:hover .pvt-stars{opacity:1;}
+.pstar{font-size:10px;color:rgba(255,255,255,.3);}
+.pstar.on{color:var(--gold);}
+.sc-info{padding:9px 11px 11px;}
+.sc-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sc-role{font-size:10px;color:var(--warm);margin-top:1px;}
+.sc-split{display:flex;justify-content:space-between;margin-top:7px;}
+.sc-si{text-align:center;}
+.sc-sv{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;line-height:1;}
+.sc-sl{font-size:9px;color:var(--taupe);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.sc-div{width:1px;background:var(--linen);}
+.tc{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 7px;border-radius:20px;margin-top:6px;}
+.tc-up{background:#E8F3E8;color:var(--sage);}
+.tc-dn{background:var(--danger-l);color:var(--danger);}
+.tc-fl{background:var(--bone);color:var(--warm);}
+.add-card{width:148px;height:214px;border-radius:12px;border:1.5px dashed var(--linen);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:6px;transition:all .15s;flex-shrink:0;}
+.add-card:hover{border-color:var(--gold);background:var(--gold-l);}
+.add-card .ai{font-size:22px;color:var(--taupe);}
+.add-card .al{font-size:11px;color:var(--taupe);text-align:center;}
+.add-card:hover .ai,.add-card:hover .al{color:#7A5A00;}
+
+/* ══════════════════════════════
+   PROFILE PAGE
+══════════════════════════════ */
+.prof-topbar{background:white;border-bottom:1px solid var(--linen);padding:14px 32px;display:flex;align-items:center;gap:14px;}
+.back{font-size:13px;color:var(--warm);cursor:pointer;border:none;background:none;font-family:'DM Sans',sans-serif;padding:0;}
+.back:hover{color:var(--ink);}
+.prof-av{width:42px;height:42px;border-radius:50%;background:var(--bone);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.prof-av img{width:100%;height:100%;object-fit:cover;}
+.prof-av .pini{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:300;color:var(--warm);}
+.prof-nm{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:400;}
+.prof-meta{font-size:11px;color:var(--warm);margin-top:1px;}
+.prof-wrap{display:flex;min-height:calc(100vh - 52px - 53px);}
+
+/* LEFT — history panel */
+.prof-history{width:280px;flex-shrink:0;border-right:1px solid var(--linen);background:white;overflow-y:auto;}
+.ph-header{padding:16px 18px 12px;border-bottom:1px solid var(--bone);}
+.ph-title{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--warm);margin-bottom:2px;}
+.ph-sub{font-size:11px;color:var(--taupe);}
+.ph-month{padding:12px 18px;border-bottom:1px solid var(--bone);cursor:pointer;transition:background .12s;}
+.ph-month:hover{background:var(--cream);}
+.ph-month.active{background:var(--gold-l);border-left:3px solid var(--gold);}
+.ph-month.active .phm-nm{color:var(--deep);}
+.ph-month.active .phm-val{color:var(--deep);}
+.phm-nm{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:5px;}
+.phm-crs{display:flex;gap:12px;align-items:center;}
+.phm-cr{text-align:center;}
+.phm-val{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;line-height:1;}
+.phm-lbl{font-size:9px;color:var(--taupe);text-transform:uppercase;letter-spacing:.08em;margin-top:1px;}
+.v-ex{color:var(--sage);}
+.v-gd{color:#8A7000;}
+.v-nw{color:var(--danger);}
+.phm-stars{margin-left:auto;display:flex;gap:2px;}
+.ms{font-size:12px;color:var(--linen);cursor:pointer;}
+.ms.on{color:var(--gold);}
+.ph-add-month{padding:12px 18px;}
+.ph-new-btn{width:100%;padding:8px;border:1.5px dashed var(--linen);border-radius:7px;background:transparent;font-size:12px;color:var(--taupe);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.ph-new-btn:hover{border-color:var(--gold);color:#7A5A00;background:var(--gold-l);}
+
+/* RIGHT — review panel */
+.prof-review{flex:1;overflow-y:auto;background:var(--cream);}
+.review-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:60px 40px;text-align:center;}
+.review-placeholder h2{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--deep);margin-bottom:10px;}
+.review-placeholder p{font-size:13px;color:var(--warm);margin-bottom:24px;line-height:1.7;}
+.review-content{padding:28px 32px 80px;}
+
+/* REVIEW MONTH HEADER */
+.rev-month-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--linen);}
+.rev-month-title{font-size:18px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;}
+.rev-month-sub{font-size:9px;color:var(--warm);margin-top:4px;letter-spacing:.1em;text-transform:uppercase;}
+.rev-status{display:inline-flex;align-items:center;gap:6px;font-size:8px;padding:4px 10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;}
+.rs-pending{background:var(--gold-l);color:var(--gd);}
+.rs-done{background:var(--sage-l);color:var(--ex);}
+
+/* REVIEW SECTIONS */
+.rsec{margin-bottom:26px;}
+.rsec-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.rsec-title{font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;white-space:nowrap;}
+.rsec-line{flex:1;height:1px;background:var(--linen);}
+.rcard{background:white;border:1px solid var(--linen);padding:16px 18px;}
+.rcard-lbl{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--warm);margin-bottom:11px;font-weight:700;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* STAT CARDS */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px;}
+.scard{background:white;border:1px solid var(--linen);padding:14px 16px;}
+.scard-lbl{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--warm);margin-bottom:5px;font-weight:700;}
+.scard-val{font-size:28px;font-weight:300;line-height:1;color:var(--black);}
+.scard-sub{font-size:10px;color:var(--warm);margin-top:3px;}
+.bdg{display:inline-block;font-size:8px;padding:2px 7px;margin-top:4px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;}
+.b-ex{background:var(--sage-l);color:var(--ex);}
+.b-gd{background:var(--gold-l);color:var(--gd);}
+.b-nw{background:var(--danger-l);color:var(--nw);}
+
+/* SALES INPUT */
+.si{display:flex;gap:10px;align-items:center;margin-bottom:9px;}
+.si label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--warm);width:110px;flex-shrink:0;font-weight:700;}
+.si input{width:76px;border:1px solid var(--linen);padding:6px 8px;font-size:13px;font-family:inherit;background:var(--bone);color:var(--black);text-align:center;}
+.si input:focus{outline:none;border-color:var(--black);}
+
+/* PROCESS STEPS */
+.proc{border:1px solid var(--linen);padding:12px 14px;margin-bottom:6px;background:white;}
+.proc-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.proc-nm{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--black);}
+.proc-ds{font-size:10px;color:var(--warm);margin-top:2px;}
+.rp-row{display:flex;gap:4px;margin-left:auto;flex-shrink:0;}
+.rp{padding:3px 10px;font-size:8px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;border:1px solid var(--linen);background:var(--bone);cursor:pointer;color:var(--warm);font-family:inherit;}
+.rp.r-ex{background:var(--sage-l);border-color:var(--ex);color:var(--ex);}
+.rp.r-gd{background:var(--gold-l);border-color:var(--gd);color:var(--gd);}
+.rp.r-nw{background:var(--danger-l);border-color:var(--nw);color:var(--nw);}
+.proc-note{width:100%;border:1px solid var(--linen);padding:7px 10px;font-size:12px;font-family:inherit;resize:none;color:var(--black);background:var(--bone);min-height:36px;}
+.proc-note:focus{outline:none;border-color:var(--black);}
+
+/* FUNDAMENTALS */
+.fund-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.fi{display:flex;align-items:flex-start;justify-content:space-between;padding:9px 12px;border:1px solid var(--linen);background:white;}
+.fi-lbl{font-size:11px;color:var(--black);padding-right:8px;}
+.fi-togs{display:flex;gap:3px;flex-shrink:0;}
+.ftog{padding:2px 7px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;border:1px solid var(--linen);background:var(--bone);cursor:pointer;color:var(--warm);font-family:inherit;}
+.ftog.f-ex{background:var(--sage-l);border-color:var(--ex);color:var(--ex);}
+.ftog.f-nt{background:#EEF0F8;border-color:#7A82B0;color:#4A5280;}
+.ftog.f-nw{background:var(--danger-l);border-color:var(--nw);color:var(--nw);}
+.fi-highlight{border-color:var(--black);background:var(--bone);}
+.fi-highlight .fi-lbl{font-weight:700;}
+.fi-note{padding:5px 12px;background:var(--bone);display:none;}
+.fi-note input{width:100%;border:none;background:transparent;font-size:11px;color:var(--black);font-family:inherit;}
+.fi-note input:focus{outline:none;}
+
+/* LOST SALE PATTERNS */
+.lp-row{display:flex;align-items:flex-start;gap:12px;padding:11px 16px;border-bottom:1px solid var(--linen);cursor:pointer;transition:background .12s;user-select:none;}
+.lp-row:last-child{border-bottom:none;}
+.lp-row:hover{background:var(--bone);}
+.lp-row.lp-checked{background:var(--danger-l);}
+.lp-check{width:16px;height:16px;border:1.5px solid var(--taupe);background:white;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--nw);font-weight:700;flex-shrink:0;margin-top:1px;}
+.lp-row.lp-checked .lp-check{background:var(--nw);border-color:var(--nw);color:var(--white);}
+.lp-body{flex:1;}
+.lp-label{font-size:12px;color:var(--black);line-height:1.4;}
+.lp-teach{font-size:10px;color:var(--warm);margin-top:3px;line-height:1.5;}
+.lp-teach strong{color:var(--ink);}
+.lp-row.lp-checked .lp-label{color:var(--nw);}
+.lp-row.lp-checked .lp-teach{color:#B06060;}
+.ls-row{display:flex;gap:9px;align-items:flex-start;}
+.ls-sel{flex:1;border:1px solid var(--linen);padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bone);color:var(--black);}
+.teach{display:inline-block;background:var(--gold-l);color:var(--gd);font-size:9px;padding:2px 8px;letter-spacing:.08em;text-transform:uppercase;margin-top:5px;}
+.ls-note{width:100%;border:1px solid var(--linen);padding:6px 10px;font-size:12px;font-family:inherit;background:var(--bone);margin-top:7px;resize:none;min-height:32px;color:var(--black);}
+.ls-note:focus{outline:none;border-color:var(--black);}
+
+/* AI PANEL */
+.ai-panel{background:var(--black);padding:22px 26px;color:var(--white);}
+.ai-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.ai-title{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;}
+.ai-badge{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#888;border:1px solid #444;padding:3px 8px;}
+.ai-txt{font-size:13px;line-height:1.85;color:rgba(255,255,255,.85);white-space:pre-wrap;}
+.ai-dots span{display:inline-block;width:4px;height:4px;background:#888;margin:0 2px;animation:pls 1.2s infinite;}
+.ai-dots span:nth-child(2){animation-delay:.2s;}
+.ai-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes pls{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.ai-acts{display:flex;gap:7px;margin-top:16px;flex-wrap:wrap;}
+.ai-btn{padding:7px 14px;font-size:8px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;font-family:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:var(--white);transition:all .15s;}
+.ai-btn:hover{background:rgba(255,255,255,.15);}
+.ai-btn-gold{background:white;border-color:var(--white);color:var(--black);}
+.ai-btn-gold:hover{background:#e0e0e0;}
+.ai-edit-btn{padding:4px 10px;font-size:8px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;font-family:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:var(--white);}
+.ai-edit-btn:hover{background:rgba(255,255,255,.14);}
+.ai-editor{width:100%;min-height:120px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);padding:12px;font-size:13px;line-height:1.85;color:rgba(255,255,255,.9);font-family:inherit;resize:vertical;}
+.ai-editor:focus{outline:none;border-color:rgba(255,255,255,.5);}
+
+/* FLOATING NOTEPAD */
+.fab{position:fixed;bottom:28px;right:28px;width:50px;height:50px;background:var(--black);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:400;box-shadow:0 4px 14px rgba(0,0,0,.28);transition:all .18s;}
+.fab:hover{background:var(--ink);transform:scale(1.05);}
+.fab svg{width:20px;height:20px;fill:none;stroke:var(--white);stroke-width:2;stroke-linecap:round;}
+.fab-label{position:fixed;bottom:36px;right:86px;background:var(--black);color:var(--white);font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;}
+.fab:hover ~ .fab-label{opacity:1;}
+.notepad-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end;justify-content:flex-end;padding:0 28px 86px 0;}
+.notepad{background:white;width:560px;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.2);overflow:hidden;}
+.np-header{padding:16px 20px;border-bottom:1px solid var(--linen);display:flex;align-items:center;justify-content:space-between;background:var(--black);}
+.np-title{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--white);}
+.np-sub{font-size:9px;color:#888;margin-top:2px;}
+.np-close{background:none;border:none;color:#888;font-size:20px;cursor:pointer;line-height:1;padding:0;}
+.np-close:hover{color:var(--white);}
+.np-staff-sel{padding:10px 20px;border-bottom:1px solid var(--linen);display:flex;align-items:center;gap:8px;}
+.np-staff-sel label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--warm);font-weight:700;}
+.np-staff-sel select{border:1px solid var(--linen);padding:4px 8px;font-size:11px;font-family:inherit;background:var(--bone);color:var(--black);}
+.np-cols{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden;}
+.np-col{display:flex;flex-direction:column;border-right:1px solid var(--linen);}
+.np-col:last-child{border-right:none;}
+.np-col-hdr{padding:10px 14px;font-size:8px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;border-bottom:1px solid var(--linen);}
+.np-col-hdr.pos{color:var(--ex);}
+.np-col-hdr.neg{color:var(--nw);}
+.np-notes{flex:1;overflow-y:auto;padding:8px 12px;}
+.np-note{padding:7px 0;border-bottom:1px solid var(--linen);display:flex;flex-direction:column;gap:2px;}
+.np-note:last-child{border-bottom:none;}
+.np-note-txt{font-size:12px;color:var(--black);line-height:1.4;}
+.np-note-ts{font-size:9px;color:var(--warm);letter-spacing:.04em;}
+.np-note-del{font-size:10px;color:var(--taupe);background:none;border:none;cursor:pointer;padding:0;align-self:flex-end;margin-top:2px;font-family:inherit;}
+.np-note-del:hover{color:var(--nw);}
+.np-input-row{padding:10px 14px;border-top:1px solid var(--linen);display:flex;gap:7px;}
+.np-input{flex:1;border:1px solid var(--linen);padding:7px 9px;font-size:12px;font-family:inherit;background:var(--bone);color:var(--black);resize:none;min-height:36px;}
+.np-input:focus{outline:none;border-color:var(--black);}
+.np-add-btn{padding:7px 12px;font-size:8px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;border:none;cursor:pointer;font-family:inherit;}
+.np-add-pos{background:var(--sage-l);color:var(--ex);}
+.np-add-pos:hover{background:#c8e8c8;}
+.np-add-neg{background:var(--danger-l);color:var(--nw);}
+.np-add-neg:hover{background:#f0cccc;}
+
+/* BUTTONS */
+.btn{padding:8px 16px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;font-family:inherit;cursor:pointer;border:1px solid var(--linen);background:white;color:var(--black);transition:all .15s;}
+.btn:hover{background:var(--bone);}
+.btn-sm{padding:5px 10px;font-size:8px;}
+.btn-ink{background:var(--black);color:var(--white);border-color:var(--black);}
+.btn-ink:hover{background:var(--ink);}
+.btn-gold{background:var(--black);color:var(--white);border-color:var(--black);}
+.btn-gold:hover{background:var(--ink);}
+.btn-big{padding:12px 28px;font-size:10px;}
+
+/* MODALS */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:white;padding:28px 30px;width:100%;max-width:450px;max-height:90vh;overflow-y:auto;}
+.modal h2{font-size:13px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px;}
+.fg{margin-bottom:13px;}
+.fg label{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--warm);display:block;margin-bottom:5px;font-weight:700;}
+.fg input,.fg select{width:100%;border:1px solid var(--linen);padding:8px 11px;font-size:12px;font-family:inherit;background:var(--bone);color:var(--black);}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--black);}
+.modal-acts{display:flex;gap:9px;justify-content:flex-end;margin-top:22px;}
+.photo-drop{width:100%;height:100px;border:1.5px dashed var(--taupe);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:5px;transition:all .15s;}
+.photo-drop:hover{border-color:var(--black);background:var(--bone);}
+.photo-drop img{width:68px;height:68px;border-radius:50%;object-fit:cover;}
+.photo-drop p{font-size:9px;color:var(--warm);letter-spacing:.1em;text-transform:uppercase;}
+
+/* NOTES IN REVIEW */
+.note-list{min-height:50px;margin-bottom:9px;}
+.note-item{display:flex;align-items:flex-start;gap:7px;padding:7px 0;border-bottom:1px solid var(--linen);font-size:12px;color:var(--black);line-height:1.5;}
+.note-item:last-child{border-bottom:none;}
+.ndot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.nd-g{background:var(--ex);}
+.nd-r{background:var(--nw);}
+.note-ts{font-size:9px;color:var(--warm);margin-top:2px;}
+.ndel{margin-left:auto;font-size:11px;color:var(--taupe);background:none;border:none;cursor:pointer;padding:0 3px;flex-shrink:0;}
+.ndel:hover{color:var(--nw);}
+
+/* SUPA BAR */
+.supa-bar{background:var(--black);border-top:1px solid #1a1a1a;padding:7px 32px;display:flex;align-items:center;gap:12px;}
+.sd{font-size:10px;letter-spacing:.06em;}
+.sd.ok{color:#6BBF6B;}
+.sd.no{color:#CC5555;}
+.slnk{font-size:10px;color:#888;cursor:pointer;border:none;background:none;font-family:inherit;text-decoration:underline;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--taupe);}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand" onclick="showHome()">STUDIO &nbsp; MINC <em>Performance</em></div>
+  <div class="nav-r">
+    <div class="nav-month">
+      <select id="mSel" onchange="onPeriod()">
+        <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+        <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+        <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+        <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+      </select>
+      <input type="number" id="ySel" value="2026" min="2020" max="2040" style="width:66px;" onchange="onPeriod()">
+    </div>
+    <button class="nb" onclick="syncSupa()">↻ Sync</button>
+    <button class="nb" onclick="openSupaModal()" style="opacity:.6;font-size:11px;">Supabase</button>
+  </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div class="page on" id="pg-home">
+  <div class="home-wrap">
+    <div class="home-hdr">
+      <div><div class="home-title">Showrooms</div><div class="home-sub" id="homeSub"></div></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn" onclick="openShopifyUpload()" style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:14px;">↑</span> Upload Shopify Export
+        </button>
+        <button class="btn btn-ink" onclick="openAddStaff(null)">+ Add Staff</button>
+      </div>
+    </div>
+    <div id="showrooms"></div>
+  </div>
+</div>
+
+<!-- PROFILE PAGE -->
+<div class="page" id="pg-profile">
+  <div class="prof-topbar">
+    <button class="back" onclick="showHome()">← All showrooms</button>
+    <div style="width:1px;height:22px;background:var(--linen);"></div>
+    <div class="prof-av" id="profAv"></div>
+    <div>
+      <div class="prof-nm" id="profNm"></div>
+      <div class="prof-meta" id="profMeta"></div>
+    </div>
+    <div style="display:flex;gap:7px;margin-left:auto;">
+      <button class="btn btn-sm" onclick="openEditStaff()">Edit</button>
+    </div>
+  </div>
+  <div class="prof-wrap">
+    <!-- LEFT: history -->
+    <div class="prof-history" id="profHistory"></div>
+    <!-- RIGHT: review -->
+    <div class="prof-review" id="profReview">
+      <div class="review-placeholder">
+        <h2>Select a month</h2>
+        <p>Choose a month from the left to view or start a performance review.<br>Star ratings are private — never sent to staff.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FLOATING NOTEPAD -->
+<button class="fab" onclick="openNotepad()" title="Quick note">
+  <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+</button>
+<div class="fab-label">Quick note</div>
+
+<div class="notepad-overlay" id="notepadOverlay" style="display:none;" onclick="closeNotepadOutside(event)">
+  <div class="notepad" id="notepadEl">
+    <div class="np-header">
+      <div>
+        <div class="np-title">Quick Notes</div>
+        <div class="np-sub" id="npDate"></div>
+      </div>
+      <button class="np-close" onclick="closeNotepad()">×</button>
+    </div>
+    <div class="np-staff-sel">
+      <label>Staff member:</label>
+      <select id="npStaff" onchange="renderNotepadNotes()">
+        <option value="">— select —</option>
+      </select>
+      <span style="font-size:10px;color:var(--taupe);margin-left:4px;">Notes are linked to them</span>
+    </div>
+    <div class="np-cols">
+      <!-- POS COL -->
+      <div class="np-col">
+        <div class="np-col-hdr pos">✓ Positives</div>
+        <div class="np-notes" id="npPosList"></div>
+        <div class="np-input-row">
+          <textarea class="np-input" id="npPosIn" placeholder="Add positive..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addNpNote('pos');}"></textarea>
+          <button class="np-add-btn np-add-pos" onclick="addNpNote('pos')">Add</button>
+        </div>
+      </div>
+      <!-- NEG COL -->
+      <div class="np-col">
+        <div class="np-col-hdr neg">✗ Areas for Growth</div>
+        <div class="np-notes" id="npNegList"></div>
+        <div class="np-input-row">
+          <textarea class="np-input" id="npNegIn" placeholder="Add growth area..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addNpNote('neg');}"></textarea>
+          <button class="np-add-btn np-add-neg" onclick="addNpNote('neg')">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHOPIFY UPLOAD MODAL -->
+<div class="modal-bg" id="shopifyModal" style="display:none;">
+  <div class="modal" style="max-width:520px;">
+    <h2>Upload Shopify Export</h2>
+    <div style="background:var(--bone);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--deep);line-height:1.7;">
+      <strong>How to export:</strong> Shopify Admin → Orders → Export → This month → All orders → CSV<br>
+      <span style="color:var(--warm);">The app matches orders to staff by customer name + appointment time. Revenue stays private — never shown to staff.</span>
+    </div>
+    <div id="shopifyDropZone" style="border:2px dashed var(--linen);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .15s;" onclick="document.getElementById('shopifyFileIn').click()" ondragover="event.preventDefault();this.style.borderColor='var(--gold)'" ondragleave="this.style.borderColor='var(--linen)'" ondrop="handleShopifyDrop(event)">
+      <div style="font-size:28px;margin-bottom:8px;">📄</div>
+      <div style="font-size:13px;font-weight:500;color:var(--deep);">Drop Shopify CSV here</div>
+      <div style="font-size:11px;color:var(--warm);margin-top:4px;">or click to browse</div>
+    </div>
+    <input type="file" id="shopifyFileIn" accept=".csv" style="display:none;" onchange="handleShopifyFile(this)">
+    <div id="shopifyStatus" style="margin-top:14px;font-size:12px;color:var(--warm);min-height:20px;"></div>
+    <div id="shopifyResults" style="margin-top:10px;"></div>
+    <div class="modal-acts">
+      <button class="btn" onclick="closeModal('shopifyModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT STAFF MODAL -->
+<div class="modal-bg" id="staffModal" style="display:none;">
+  <div class="modal">
+    <h2 id="staffModalTitle">Add Staff Member</h2>
+    <div style="display:flex;gap:14px;margin-bottom:12px;">
+      <div>
+        <div class="photo-drop" onclick="document.getElementById('photoIn').click()">
+          <img id="photoPreview" src="" style="display:none;">
+          <span id="photoPlus" style="font-size:24px;color:var(--taupe);">+</span>
+          <p id="photoTxt">Upload photo</p>
+        </div>
+        <input type="file" id="photoIn" accept="image/*" style="display:none;" onchange="prevPhoto(this)">
+      </div>
+      <div style="flex:1;">
+        <div class="fg"><label>Full Name</label><input type="text" id="sfName" placeholder="e.g. Rhiannon"></div>
+        <div class="fg"><label>Role</label><input type="text" id="sfRole" placeholder="e.g. Stylist"></div>
+      </div>
+    </div>
+    <div class="fg"><label>Showroom</label>
+      <select id="sfStore"><option value="Gold Coast">Gold Coast</option><option value="Sydney">Sydney</option><option value="Brisbane">Brisbane</option></select>
+    </div>
+    <div class="fg"><label>Phone</label><input type="text" id="sfPhone" placeholder="0412 345 678"></div>
+    <input type="hidden" id="sfId">
+    <div class="modal-acts">
+      <button class="btn" onclick="closeModal('staffModal')">Cancel</button>
+      <button class="btn btn-ink" onclick="saveStaff()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUPABASE MODAL -->
+<div class="modal-bg" id="supaModal" style="display:none;">
+  <div class="modal">
+    <h2>Supabase Connection</h2>
+    <div class="fg"><label>Supabase URL</label><input type="text" id="supaUrl" placeholder="https://xxxx.supabase.co"></div>
+    <div class="fg"><label>Anon Key</label><input type="text" id="supaKey" placeholder="eyJ..."></div>
+    <p style="font-size:11px;color:var(--warm);margin-top:-6px;">Pulls staff and appointment data from your showroom app.</p>
+    <div class="modal-acts">
+      <button class="btn" onclick="closeModal('supaModal')">Cancel</button>
+      <button class="btn btn-ink" onclick="saveSupa()">Save & Connect</button>
+    </div>
+  </div>
+</div>
+
+<div class="supa-bar">
+  <div class="sd no" id="supaEl">● Not connected</div>
+  <button class="slnk" onclick="openSupaModal()">Configure Supabase</button>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// CONSTANTS & STATE
+// ══════════════════════════════════════
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const STORES=['Gold Coast','Sydney','Brisbane'];
+const DK='sm_perf_v4', SUK='sm_su', SKK='sm_sk';
+
+const STEPS=[
+  {key:'greeting',name:'Greeting / Energy',desc:'First impression, warmth, connection with the customer'},
+  {key:'dresses',name:'6–8 Dresses',desc:'Pulling the right range — not too many or too few'},
+  {key:'eliminating',name:'Eliminating',desc:'Narrowing down confidently, not leaving customer overwhelmed'},
+  {key:'urgency',name:'Urgency',desc:'Creating genuine urgency without being pushy'},
+  {key:'theone',name:'The One',desc:'Identifying favourite dress, compliments, reinforcing the moment'},
+];
+const FUNDS=['Reliability','Personal Presentation','Drive','Productivity','Time Management','Appointment Control','Punctuality','Reviews','Locking Up','Daily Texts / Phone','Showroom Presentation','Running Appointments on Time','Taking Feedback / Listening','Active Listening & Asking Questions'];
+const LOST=[
+  // Controllable by staff
+  {label:'Wants to sleep on it',      step:'urgency',     tip:'Create a genuine reason to decide today — stock scarcity, exclusivity, what they risk losing by waiting'},
+  {label:'Couldn\'t decide between two',step:'eliminating',tip:'Trust your eye and guide them — your job is to eliminate, not leave them with two favourites'},
+  {label:'Needs family/friends opinion',step:'theone',     tip:'Build conviction in the moment — if they feel it, help them own that feeling before they leave'},
+  {label:'Vibe felt flat',            step:'greeting',    tip:'Energy at the door sets the entire appointment — reset early if connection isn\'t there'},
+  {label:'Differing opinions',        step:'theone',      tip:'Reinforce the customer\'s own instinct — they came with an opinion, help them trust it'},
+  {label:'Nothing suited',            step:'dresses',     tip:'Go deeper on questioning upfront — style, silhouette, vibe, what they\'ve already tried'},
+  {label:'Budget',                    step:'urgency',     tip:'Anchor value before price — explore payment options early, not as a last resort'},
+  // Partially controllable
+  {label:'Had other appointments',    step:'urgency',     tip:'Create urgency to commit before they leave — other appointments dilute the moment'},
+  {label:'No parent with them',       step:'theone',      tip:'Flag this at the start and manage expectations — or help them feel confident deciding without approval'},
+  {label:'Sizing issues',             step:'dresses',     tip:'Pull styles that fit well before pulling dream styles — confidence in the fit drives the sale'},
+  {label:'School registry issues',    step:null,          tip:'Flag registry conflicts early in the appointment — admin issues shouldn\'t derail a great experience'},
+  // External
+  {label:'Other',                     step:null,          tip:null},
+];
+
+let S={staff:[],reviews:{},curId:null,curMonth:null,curYear:null,month:null,year:null};
+
+// review key
+const rvk=(id,y,m)=>`${id}_${y}_${String(m).padStart(2,'0')}`;
+
+function getMk(id,y,m){
+  const k=rvk(id,y,m);
+  if(!S.reviews[k])S.reviews[k]={fA:'',fS:'',bA:'',bS:'',totalSales:'',pRatings:{},pNotes:{},funds:{},fNotes:{},pros:[],cons:[],lostSales:[],ai:'',rating:null};
+  return S.reviews[k];
+}
+const curRev=()=>S.curId&&S.curMonth?getMk(S.curId,S.curYear,S.curMonth):null;
+
+function sv(){localStorage.setItem(DK,JSON.stringify({staff:S.staff,reviews:S.reviews}));}
+function ld(){try{const d=JSON.parse(localStorage.getItem(DK)||'{}');S.staff=d.staff||[];S.reviews=d.reviews||{};}catch(e){}}
+
+const crCalc=(a,s)=>{const av=parseFloat(a),sv=parseFloat(s);return av>0?Math.round(sv/av*100):null;};
+function blended(rev){
+  const fC=crCalc(rev.fA,rev.fS),bC=crCalc(rev.bA,rev.bS);
+  const vals=[fC,bC].filter(v=>v!==null); if(!vals.length)return null;
+  const fA=parseFloat(rev.fA)||0,bA=parseFloat(rev.bA)||0,tot=fA+bA;
+  if(!tot)return Math.round(vals.reduce((a,b)=>a+b)/vals.length);
+  return Math.round(((parseFloat(rev.fS)||0)+(parseFloat(rev.bS)||0))/tot*100);
+}
+const crCls=v=>v===null?'':v>=65?'v-ex':v>=50?'v-gd':'v-nw';
+const pillCls=v=>v===null?'p-none':v>=65?'p-ex':v>=50?'p-gd':'p-nw';
+const ini=n=>(n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+const fmtTS=()=>{const n=new Date();return n.toLocaleDateString('en-AU',{day:'numeric',month:'short'})+' '+n.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});};
+
+function getTrend(id){
+  const pts=[];
+  for(let m=1;m<=12;m++){const r=S.reviews[rvk(id,S.year,m)];if(r){const b=blended(r);if(b!==null)pts.push(b);}}
+  if(pts.length<2)return null;
+  const d=pts[pts.length-1]-pts[pts.length-2];
+  return d>3?{dir:'up',lbl:`+${Math.round(d)}%`}:d<-3?{dir:'down',lbl:`${Math.round(d)}%`}:{dir:'flat',lbl:'Stable'};
+}
+function latestRating(id){
+  for(let m=S.month;m>=1;m--){const r=S.reviews[rvk(id,S.year,m)];if(r&&r.rating)return r.rating;}
+  return null;
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+(function init(){
+  ld();
+  const now=new Date(); S.month=now.getMonth()+1; S.year=now.getFullYear();
+  document.getElementById('mSel').value=S.month;
+  document.getElementById('ySel').value=S.year;
+
+  // Seed test staff member if none exist
+  if(!S.staff.length){
+    const tid='test_001';
+    S.staff.push({id:tid,name:'Zoe Mitchell',role:'Senior Stylist',store:'Gold Coast',phone:'0412 000 000',photo:null});
+    // Seed 5 months of data so history + trend work
+    const seedData=[
+      {m:1,fA:18,fS:10,bA:6,bS:4,rating:3},
+      {m:2,fA:20,fS:12,bA:5,bS:3,rating:3},
+      {m:3,fA:22,fS:15,bA:7,bS:5,rating:4},
+      {m:4,fA:19,fS:14,bA:6,bS:5,rating:4},
+      {m:5,fA:21,fS:17,bA:8,bS:7,rating:5},
+    ];
+    const y=S.year;
+    seedData.forEach(d=>{
+      const rev=getMk(tid,y,d.m);
+      rev.fA=d.fA; rev.fS=d.fS; rev.bA=d.bA; rev.bS=d.bS; rev.rating=d.rating;
+      rev.pRatings={greeting:'ex',dresses:'gd',eliminating:'gd',urgency:'nw',theone:'ex'};
+      rev.pNotes={urgency:'Tends to back off when customer says they need to think. Practice holding the close with warmth.'};
+      rev.funds={Reliability:'ex',Punctuality:'ex',Drive:'ex','Personal Presentation':'ex','Time Management':'gd','Appointment Control':'gd','Taking Feedback / Listening':'ex'};
+      rev.pros=[{text:'Incredible energy from the moment customers walk in',ts:'3 '+['Jan','Feb','Mar','Apr','May'][d.m-1]+' 10:15 AM'},{text:'Always on time, never needs reminding',ts:'7 '+['Jan','Feb','Mar','Apr','May'][d.m-1]+' 2:30 PM'}];
+      rev.cons=[{text:'Talking about herself too much instead of focusing on the customer',ts:'5 '+['Jan','Feb','Mar','Apr','May'][d.m-1]+' 11:00 AM'},{text:'Gives up on urgency too quickly when customer hesitates',ts:'12 '+['Jan','Feb','Mar','Apr','May'][d.m-1]+' 3:45 PM'}];
+      rev.lostSales=[{reason:'Needed to think / come back',note:'Customer said she wanted to check if her mum could come. Zoe let her leave without exploring options.'}];
+    });
+    // Current month — partial data, no review yet
+    const curRev=getMk(tid,y,S.month);
+    curRev.fA=14; curRev.fS=10; curRev.bA=5; curRev.bS=4;
+    curRev.rating=null;
+    curRev.pros=[{text:'Great energy today, customer immediately felt at ease',ts:'1 May 9:30 AM'},{text:'Excellent at narrowing the dress selection',ts:'8 May 1:15 PM'}];
+    curRev.cons=[{text:'Still letting customers leave without a strong close',ts:'3 May 11:00 AM'}];
+    sv();
+  }
+
+  checkSupa(); renderHome();
+})();
+
+function onPeriod(){
+  S.month=parseInt(document.getElementById('mSel').value);
+  S.year=parseInt(document.getElementById('ySel').value);
+  if(document.getElementById('pg-profile').classList.contains('on'))renderProfHistory();
+  else renderHome();
+}
+
+// ══════════════════════════════════════
+// PAGES
+// ══════════════════════════════════════
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));document.getElementById('pg-'+id).classList.add('on');}
+function showHome(){S.curId=null;showPage('home');renderHome();}
+function closeModal(id){document.getElementById(id).style.display='none';}
+
+// ══════════════════════════════════════
+// HOME
+// ══════════════════════════════════════
+function renderHome(){
+  document.getElementById('homeSub').textContent=`${MONTHS[S.month-1]} ${S.year} · Click a staff member to open their profile`;
+  document.getElementById('showrooms').innerHTML=STORES.map(store=>{
+    const team=S.staff.filter(s=>s.store===store);
+    const wd=team.filter(s=>{const r=S.reviews[rvk(s.id,S.year,S.month)];return r&&(parseFloat(r.fA)||0)+(parseFloat(r.bA)||0)>0;});
+    const avg=wd.length?Math.round(wd.reduce((sum,s)=>sum+(blended(S.reviews[rvk(s.id,S.year,S.month)])||0),0)/wd.length):null;
+    return `<div class="showroom-sec">
+      <div class="showroom-hdr">
+        <div class="showroom-nm">${store}</div><div class="showroom-ln"></div>
+        <div class="showroom-meta">${team.length} staff${avg!==null?' · Team avg '+avg+'% CR':''}</div>
+      </div>
+      <div class="cards-row">${team.map(s=>staffCard(s)).join('')}
+        <div class="add-card" onclick="openAddStaff('${store}')"><div class="ai">+</div><div class="al">Add to<br>${store}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  // update notepad staff list
+  const np=document.getElementById('npStaff');
+  const curVal=np.value;
+  np.innerHTML='<option value="">— select —</option>'+S.staff.map(s=>`<option value="${s.id}">${s.name} (${s.store})</option>`).join('');
+  if(curVal)np.value=curVal;
+}
+
+function staffCard(s){
+  const rev=S.reviews[rvk(s.id,S.year,S.month)];
+  const bld=rev?blended(rev):null,fC=rev?crCalc(rev.fA,rev.fS):null,bC=rev?crCalc(rev.bA,rev.bS):null;
+  const trend=getTrend(s.id),rating=latestRating(s.id);
+  const photoEl=s.photo?`<img src="${s.photo}" alt="${s.name}">`:`<div class="sc-ini">${ini(s.name)}</div>`;
+  const crPill=bld!==null?`<div class="cr-pill ${pillCls(bld)}">${bld}%</div>`:'';
+  const pStars=[1,2,3,4,5].map(n=>`<span class="pstar ${rating>=n?'on':''}">★</span>`).join('');
+  const trendEl=trend?`<div class="tc tc-${trend.dir}">${trend.dir==='up'?'↑':trend.dir==='down'?'↓':'→'} ${trend.lbl}</div>`:'';
+  const splitEl=fC!==null&&bC!==null?`<div class="sc-split"><div class="sc-si"><div class="sc-sv">${fC}%</div><div class="sc-sl">Formal</div></div><div class="sc-div"></div><div class="sc-si"><div class="sc-sv">${bC}%</div><div class="sc-sl">Bridal</div></div></div>`:bld===null?`<div style="font-size:10px;color:var(--taupe);margin-top:6px;">No data yet</div>`:'';
+  return `<div class="sc" onclick="openProfile('${s.id}')">
+    <div class="sc-photo">${photoEl}${crPill}<div class="pvt-stars">${pStars}</div></div>
+    <div class="sc-info"><div class="sc-name">${s.name}</div><div class="sc-role">${s.role||'Stylist'}</div>${splitEl}${trendEl}</div>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+// PROFILE PAGE
+// ══════════════════════════════════════
+function openProfile(id){
+  S.curId=id; S.curMonth=null; S.curYear=null;
+  const s=S.staff.find(x=>x.id===id);
+  const av=document.getElementById('profAv');
+  av.innerHTML=s.photo?`<img src="${s.photo}" alt="${s.name}">`:`<div class="pini">${ini(s.name)}</div>`;
+  document.getElementById('profNm').textContent=s.name;
+  document.getElementById('profMeta').textContent=`${s.role||'Stylist'} · ${s.store}`;
+  renderProfHistory();
+  document.getElementById('profReview').innerHTML=`<div class="review-placeholder"><h2>Select a month</h2><p>Choose a month from the left to view or start a performance review.<br>Star ratings are private — never sent to staff.</p></div>`;
+  showPage('profile');
+}
+
+function renderProfHistory(){
+  const s=S.staff.find(x=>x.id===S.curId); if(!s)return;
+  // collect all months that have any data for this staff + current year
+  const entries=[];
+  const now=new Date(); const nowM=now.getMonth()+1, nowY=now.getFullYear();
+  // Show all 12 months of current year + any past months with data
+  const years=new Set([S.year]);
+  Object.keys(S.reviews).forEach(k=>{if(k.startsWith(s.id+'_')){const parts=k.split('_');years.add(parseInt(parts[parts.length-2]));}});
+  years.forEach(y=>{
+    for(let m=12;m>=1;m--){
+      const rev=S.reviews[rvk(s.id,y,m)];
+      const hasData=rev&&(blended(rev)!==null||rev.ai||rev.rating||(rev.pros&&rev.pros.length)||(rev.cons&&rev.cons.length));
+      const isCurrent=(y===nowY&&m===nowM);
+      if(hasData||isCurrent)entries.push({y,m,rev:rev||null});
+    }
+  });
+  entries.sort((a,b)=>b.y-a.y||b.m-a.m);
+  // deduplicate
+  const seen=new Set(); const uniq=entries.filter(e=>{const k=`${e.y}_${e.m}`;if(seen.has(k))return false;seen.add(k);return true;});
+
+  let html=`<div class="ph-header"><div class="ph-title">Performance History</div><div class="ph-sub">Click month to view · Stars are private</div></div>`;
+  uniq.forEach(e=>{
+    const bld=e.rev?blended(e.rev):null,fC=e.rev?crCalc(e.rev.fA,e.rev.fS):null,bC=e.rev?crCalc(e.rev.bA,e.rev.bS):null;
+    const rating=e.rev?.rating||null;
+    const isActive=S.curMonth===e.m&&S.curYear===e.y;
+    const isCurr=(e.y===nowY&&e.m===nowM);
+    const stars=[1,2,3,4,5].map(n=>`<span class="ms ${rating>=n?'on':''}" onclick="event.stopPropagation();setHistRating('${s.id}',${e.y},${e.m},${n})">★</span>`).join('');
+    html+=`<div class="ph-month ${isActive?'active':''}" onclick="openMonthReview(${e.y},${e.m})">
+      <div class="phm-nm">${MONTHS[e.m-1]} ${e.y}${isCurr?' <span style="font-size:9px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-left:4px;">Current</span>':''}</div>
+      <div class="phm-crs">
+        ${bld!==null?`<div class="phm-cr"><div class="phm-val ${crCls(bld)}">${bld}%</div><div class="phm-lbl">Blended</div></div>`:''}
+        ${fC!==null?`<div class="phm-cr"><div class="phm-val ${crCls(fC)}">${fC}%</div><div class="phm-lbl">Formal</div></div>`:''}
+        ${bC!==null?`<div class="phm-cr"><div class="phm-val ${crCls(bC)}">${bC}%</div><div class="phm-lbl">Bridal</div></div>`:''}
+        ${bld===null?`<span style="font-size:11px;color:var(--taupe);">No data</span>`:''}
+        <div class="phm-stars">${stars}</div>
+      </div>
+      ${e.rev?.ai?`<div style="font-size:10px;color:var(--sage);margin-top:5px;">✓ Review sent</div>`:isCurr&&!e.rev?.ai?`<div style="font-size:10px;color:var(--gold);margin-top:5px;">● Pending review</div>`:''}
+    </div>`;
+  });
+  html+=`<div class="ph-add-month"><button class="ph-new-btn" onclick="addNewMonth()">+ Add past month</button></div>`;
+  document.getElementById('profHistory').innerHTML=html;
+}
+
+function setHistRating(id,y,m,n){
+  const rev=getMk(id,y,m); rev.rating=rev.rating===n?null:n; sv(); renderProfHistory();
+}
+
+function addNewMonth(){
+  // prompt month selection
+  const y=parseInt(prompt('Year (e.g. 2025):','2025')||'');
+  const m=parseInt(prompt('Month number (1-12):','1')||'');
+  if(!y||!m||m<1||m>12)return;
+  getMk(S.curId,y,m); sv(); renderProfHistory();
+}
+
+function openMonthReview(y,m){
+  S.curMonth=m; S.curYear=y;
+  renderProfHistory(); // re-render to update active state
+  renderReviewPanel();
+}
+
+// ══════════════════════════════════════
+// REVIEW PANEL (right side)
+// ══════════════════════════════════════
+function renderReviewPanel(){
+  const s=S.staff.find(x=>x.id===S.curId); if(!s)return;
+  const rev=getMk(s.id,S.curYear,S.curMonth);
+  const mn=MONTHS[S.curMonth-1];
+  const fC=crCalc(rev.fA,rev.fS),bC=crCalc(rev.bA,rev.bS),bld=blended(rev);
+  const now=new Date(); const isCurr=(S.curYear===now.getFullYear()&&S.curMonth===now.getMonth()+1);
+  const badg=v=>v===null?'':v>=65?'<span class="bdg b-ex">Excellent</span>':v>=50?'<span class="bdg b-gd">Good</span>':'<span class="bdg b-nw">Needs Attention</span>';
+
+  const html=`<div class="review-content">
+    <!-- MONTH HEADER -->
+    <div class="rev-month-hdr">
+      <div>
+        <div class="rev-month-title">${mn} ${S.curYear}</div>
+        <div class="rev-month-sub">${s.name} · ${s.store}</div>
+      </div>
+      <span class="rev-status ${rev.ai?'rs-done':'rs-pending'}">${rev.ai?'✓ Review generated':'● Pending review'}</span>
+    </div>
+
+    <!-- STATS -->
+    <div class="stat-row">
+      <div class="scard"><div class="scard-lbl">Blended CR</div><div class="scard-val" id="rv-bld">${bld!==null?bld+'%':'—'}</div>${badg(bld)}</div>
+      <div class="scard"><div class="scard-lbl">Formal CR</div><div class="scard-val" id="rv-f">${fC!==null?fC+'%':'—'}</div><div class="scard-sub" id="rv-fs">${rev.fA||0} appts · ${rev.fS||0} sales</div></div>
+      <div class="scard"><div class="scard-lbl">Bridal CR</div><div class="scard-val" id="rv-b">${bC!==null?bC+'%':'—'}</div><div class="scard-sub" id="rv-bs">${rev.bA||0} appts · ${rev.bS||0} sales</div></div>
+      ${(()=>{
+        const rev2=getMk(s.id,S.curYear,S.curMonth);
+        const rev_amt=rev2.shopifyRevenue;
+        const rev_count=rev2.shopifyOrders;
+        return `<div class="scard" style="border-color:var(--gold);background:var(--gold-l);position:relative;">
+          <div style="position:absolute;top:8px;right:8px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--warm);background:white;padding:1px 5px;border-radius:10px;">Private</div>
+          <div class="scard-lbl" style="color:var(--warm);">Revenue Generated</div>
+          <div class="scard-val" style="font-size:${rev_amt?'22px':'28px'};">${rev_amt?'$'+Math.round(rev_amt).toLocaleString():'—'}</div>
+          <div class="scard-sub">${rev_amt?`${rev_count||0} matched orders · not sent to staff`:'Upload Shopify export to populate'}</div>
+        </div>`;
+      })()}
+    </div>
+
+    <!-- SECTION 1: APPOINTMENTS -->
+    <div class="rsec">
+      <div class="rsec-head"><span class="rsec-title">Appointments & Sales</span><div class="rsec-line"></div></div>
+      <div class="g2">
+        <div class="rcard"><div class="rcard-lbl">Formal</div>
+          <div class="si"><label>Appointments</label><input type="number" id="fA" min="0" value="${rev.fA}" placeholder="0" onchange="updSales()"></div>
+          <div class="si"><label>Sales</label><input type="number" id="fS" min="0" value="${rev.fS}" placeholder="0" onchange="updSales()"></div>
+        </div>
+        <div class="rcard"><div class="rcard-lbl">Bridal</div>
+          <div class="si"><label>Appointments</label><input type="number" id="bA" min="0" value="${rev.bA}" placeholder="0" onchange="updSales()"></div>
+          <div class="si"><label>Sales</label><input type="number" id="bS" min="0" value="${rev.bS}" placeholder="0" onchange="updSales()"></div>
+        </div>
+      </div>
+
+    <!-- PRIVATE: WHAT IF UPLIFT TOOL -->
+    ${(()=>{
+      const totalAppts=(parseFloat(rev.fA)||0)+(parseFloat(rev.bA)||0);
+      const totalSales=(parseFloat(rev.fS)||0)+(parseFloat(rev.bS)||0);
+      const aov=rev.shopifyRevenue&&rev.shopifyOrders?(rev.shopifyRevenue/rev.shopifyOrders):null;
+      const currentCR=totalAppts>0?totalSales/totalAppts:null;
+      if(!aov||currentCR===null) return `
+        <div style="border:1px dashed var(--linen);border-radius:10px;padding:16px 18px;margin-bottom:26px;position:relative;">
+          <div style="position:absolute;top:10px;right:12px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--warm);background:var(--gold-l);padding:2px 7px;border-radius:10px;">Private</div>
+          <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--taupe);margin-bottom:6px;font-weight:500;">Revenue Uplift Potential</div>
+          <div style="font-size:12px;color:var(--taupe);font-style:italic;">Upload Shopify export to unlock — shows how much extra revenue ${s.name.split(' ')[0]} could generate by improving their conversion rate.</div>
+        </div>`;
+      const scenarios=[-15,-10,-5,5,10,15,20];
+      const currentRev=aov*totalSales;
+      const rows=scenarios.map(pct=>{
+        const newCR=Math.min(Math.max(currentCR+pct/100,0),1);
+        const newSales=totalAppts*newCR;
+        const extraSales=newSales-totalSales;
+        const extraRev=extraSales*aov;
+        const newRev=currentRev+extraRev;
+        return {pct,extraSales,extraRev,newRev,newCR:Math.round(newCR*100)};
+      });
+      return `
+        <div style="border:1px solid var(--gold);border-radius:10px;overflow:hidden;margin-bottom:26px;background:var(--gold-l);position:relative;">
+          <div style="position:absolute;top:10px;right:12px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--warm);background:white;padding:2px 7px;border-radius:10px;">Private · Not sent to staff</div>
+          <div style="padding:14px 18px 10px;">
+            <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--warm);margin-bottom:2px;font-weight:500;">Revenue Uplift Potential</div>
+            <div style="font-size:11px;color:var(--warm);">Based on ${s.name.split(' ')[0]}'s AOV of <strong style="color:var(--deep);">$${Math.round(aov).toLocaleString()}</strong> and ${totalAppts} appointments this month · Current CR ${Math.round(currentCR*100)}%</div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;background:white;">
+            <thead>
+              <tr style="background:var(--bone);">
+                <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);font-weight:700;border-bottom:1px solid var(--linen);">If CR improves by</th>
+                <th style="padding:8px 12px;text-align:center;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);font-weight:700;border-bottom:1px solid var(--linen);">New CR</th>
+                <th style="padding:8px 12px;text-align:center;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);font-weight:700;border-bottom:1px solid var(--linen);">Extra sales</th>
+                <th style="padding:8px 12px;text-align:center;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);font-weight:700;border-bottom:1px solid var(--linen);">Extra revenue</th>
+                <th style="padding:8px 18px;text-align:right;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);font-weight:700;border-bottom:1px solid var(--linen);">Total revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map((r,i)=>{
+                const isNeg=r.pct<0;
+                const isDivider=r.pct===5&&rows.find(x=>x.pct===-5); // line between neg and pos
+                return `
+                ${isDivider?`<tr><td colspan="5" style="padding:0;"><div style="border-top:2px solid var(--linen);margin:0;"></div></td></tr>`:''}
+                <tr style="border-bottom:1px solid var(--bone);${i===rows.length-1?'border-bottom:none;':''}${isNeg?'background:#fdf7f7;':''}">
+                  <td style="padding:10px 18px;font-size:13px;font-weight:500;color:${isNeg?'var(--danger)':'var(--deep)'};">${r.pct>0?'+':''}${r.pct}%</td>
+                  <td style="padding:10px 12px;text-align:center;font-size:13px;color:${isNeg?'var(--danger)':r.newCR>=65?'var(--sage)':'var(--warm)'};font-weight:500;">${r.newCR}%</td>
+                  <td style="padding:10px 12px;text-align:center;font-size:13px;color:${isNeg?'var(--danger)':'var(--deep)'};">${r.pct>0?'+':''}${r.extraSales.toFixed(1)}</td>
+                  <td style="padding:10px 12px;text-align:center;font-size:13px;font-weight:500;color:${isNeg?'var(--danger)':'var(--sage)'};">${isNeg?'−$':'+ $'}${Math.abs(Math.round(r.extraRev)).toLocaleString()}</td>
+                  <td style="padding:10px 18px;text-align:right;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;color:${isNeg?'var(--danger)':'var(--ink)'};">$${Math.round(r.newRev).toLocaleString()}</td>
+                </tr>`;}).join('')}
+            </tbody>
+          </table>
+          <div style="padding:10px 18px;font-size:10px;color:var(--warm);border-top:1px solid var(--linen);">
+            Current revenue this month: <strong style="color:var(--deep);">$${Math.round(currentRev).toLocaleString()}</strong> · AOV from Shopify data
+          </div>
+        </div>`;
+    })()}
+
+    <!-- SECTION 2: SALES PROCESS -->
+    <div class="rsec">
+      <div class="rsec-head"><span class="rsec-title">Sales Process</span><div class="rsec-line"></div></div>
+      <div style="background:var(--bone);border-radius:8px;padding:12px 16px;margin-bottom:14px;border-left:3px solid var(--gold);">
+        <p style="font-size:12px;color:var(--deep);line-height:1.7;font-style:italic;">"Our sales process has been refined over a decade of industry experience. Every step — from the moment a customer walks in, to finding The One — is intentional. Miss a step, and you'll feel it in the result. This isn't a script; it's the difference between a customer who leaves with a dress she loves and one who leaves uncertain."</p>
+      </div>
+      <p style="font-size:11px;color:var(--warm);margin-bottom:12px;">Rate each step of the appointment. Add a coaching note where there's room to grow.</p>
+      ${STEPS.map(st=>`<div class="proc">
+        <div class="proc-top">
+          <div><div class="proc-nm">${st.name}</div><div class="proc-ds">${st.desc}</div></div>
+          <div class="rp-row">
+            <span class="rp ${rev.pRatings[st.key]==='ex'?'r-ex':''}" onclick="setRating('${st.key}','ex',this)">Excellent</span>
+            <span class="rp ${rev.pRatings[st.key]==='gd'?'r-gd':''}" onclick="setRating('${st.key}','gd',this)">Good</span>
+            <span class="rp ${rev.pRatings[st.key]==='nw'?'r-nw':''}" onclick="setRating('${st.key}','nw',this)">Needs Work</span>
+          </div>
+        </div>
+        <textarea class="proc-note" placeholder="Coaching note (optional)..." onchange="savePNote('${st.key}',this.value)">${rev.pNotes[st.key]||''}</textarea>
+      </div>`).join('')}
+    </div>
+
+    <!-- SECTION 3: FUNDAMENTALS -->
+    <div class="rsec">
+      <div class="rsec-head"><span class="rsec-title">Performance Fundamentals</span><div class="rsec-line"></div></div>
+      <div class="fund-grid">
+        ${FUNDS.map(f=>{const fk=f.replace(/[\s\/&]/g,'_');
+        const isAL = f==='Active Listening & Asking Questions';
+        return `<div>
+          <div class="fi"><span class="fi-lbl">${f}${isAL?` <span style="font-size:9px;color:var(--warm);font-style:italic;display:block;margin-top:2px;">Asks questions rather than projecting opinion</span>`:''}</span>
+            <div class="fi-togs">
+              <button class="ftog ${rev.funds[f]==='ex'?'f-ex':''}" onclick="setFund('${f}','ex',this)">✓ Excellent</button>
+              <button class="ftog ${rev.funds[f]==='nt'?'f-nt':''}" onclick="setFund('${f}','nt',this)">Neutral</button>
+              <button class="ftog ${rev.funds[f]==='nw'?'f-nw':''}" onclick="setFund('${f}','nw',this)">Needs work</button>
+            </div>
+          </div>
+          <div class="fi-note" id="fn_${fk}"><input type="text" placeholder="Add a note..." value="${rev.fNotes[f]||''}" onchange="saveFNote('${f}',this.value)"></div>
+        </div>`}).join('')}
+      </div>
+    </div>
+
+    <!-- SECTION 4: PROS & CONS (from notepad, editable here too) -->
+    <div class="rsec">
+      <div class="rsec-head"><span class="rsec-title">Positives & Growth Areas</span><div class="rsec-line"></div></div>
+      <p style="font-size:11px;color:var(--warm);margin-bottom:12px;">Notes added via the quick notepad (bottom right) appear here automatically, with timestamps.</p>
+      <div class="g2">
+        <div class="rcard">
+          <div class="rcard-lbl" style="color:var(--sage);">Positives</div>
+          <div class="note-list" id="prosList">${renderRevNotes(rev.pros,'pros')}</div>
+          <div style="display:flex;gap:7px;">
+            <input type="text" id="proIn" placeholder="Add positive..." style="flex:1;border:1px solid var(--linen);border-radius:6px;padding:7px 9px;font-size:12px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);" onkeydown="if(event.key==='Enter')addRevNote('pros')">
+            <button class="btn btn-sm" onclick="addRevNote('pros')">Add</button>
+          </div>
+        </div>
+        <div class="rcard">
+          <div class="rcard-lbl" style="color:var(--danger);">Areas for Growth</div>
+          <div class="note-list" id="consList">${renderRevNotes(rev.cons,'cons')}</div>
+          <div style="display:flex;gap:7px;">
+            <input type="text" id="conIn" placeholder="Add area..." style="flex:1;border:1px solid var(--linen);border-radius:6px;padding:7px 9px;font-size:12px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);" onkeydown="if(event.key==='Enter')addRevNote('cons')">
+            <button class="btn btn-sm" onclick="addRevNote('cons')">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 5: LOST SALES -->
+    <div class="rsec">
+      <div class="rsec-head"><span class="rsec-title">Lost Sale Patterns</span><div class="rsec-line"></div></div>
+      <p style="font-size:11px;color:var(--warm);margin-bottom:14px;">Tick the patterns you noticed this month. Each links back to the sales process step to coach on. Add a note for any context.</p>
+      <div id="lostList">${renderLost(rev)}</div>
+    </div>
+
+    <!-- SECTION 6: AI REVIEW -->
+    <div class="rsec">
+      <div class="rsec-head"><span class="rsec-title">Performance Review</span><div class="rsec-line"></div></div>
+      <div class="ai-panel">
+        <div class="ai-hdr">
+          <div class="ai-title">Monthly Review for ${s.name}</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${rev.ai?`<button class="ai-edit-btn" id="aiEditBtn" onclick="toggleEditAI()">Edit</button>`:''}
+            <div class="ai-badge">AI Generated</div>
+          </div>
+        </div>
+        <div id="aiContent">${rev.ai
+          ?`<div class="ai-txt" id="aiTxt">${rev.ai}</div>
+             <textarea class="ai-editor" id="aiEditor" style="display:none;" onchange="saveAIEdit(this.value)">${rev.ai}</textarea>`
+          :`<div style="font-size:13px;color:rgba(250,248,244,.4);line-height:1.7;">Fill in the sections above, then generate the review. Claude will write a warm, honest summary ready to send directly to ${s.name}.</div>`
+        }</div>
+        <div class="ai-acts" id="aiActs">
+          ${rev.ai
+            ?`<button class="ai-btn ai-btn-gold" onclick="generateReview()">↺ Regenerate</button>
+               <button class="ai-btn" onclick="previewPDF()">👁 Preview</button>
+               <button class="ai-btn" onclick="expPDF()">↓ Download PDF</button>
+               <button class="ai-btn" onclick="shareWA()">WhatsApp</button>
+               <button class="ai-btn" onclick="shareSMS()">SMS</button>`
+            :`<button class="ai-btn ai-btn-gold" onclick="generateReview()">Generate Review →</button>`}
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('profReview').innerHTML=html;
+  // show fund notes for any 'needs work'
+  FUNDS.forEach(f=>{if(rev.funds[f]==='nw'||rev.funds[f]==='nt'){const el=document.getElementById('fn_'+f.replace(/[\s\/&]/g,'_'));if(el)el.style.display='block';}});
+}
+
+// REVIEW: sales inputs
+function updSales(){
+  const rev=curRev(); if(!rev)return;
+  rev.fA=document.getElementById('fA').value; rev.fS=document.getElementById('fS').value;
+  rev.bA=document.getElementById('bA').value; rev.bS=document.getElementById('bS').value;
+  const fC=crCalc(rev.fA,rev.fS),bC=crCalc(rev.bA,rev.bS),bld=blended(rev);
+  document.getElementById('rv-f').textContent=fC!==null?fC+'%':'—';
+  document.getElementById('rv-b').textContent=bC!==null?bC+'%':'—';
+  document.getElementById('rv-bld').textContent=bld!==null?bld+'%':'—';
+  document.getElementById('rv-fs').textContent=`${rev.fA||0} appts · ${rev.fS||0} sales`;
+  document.getElementById('rv-bs').textContent=`${rev.bA||0} appts · ${rev.bS||0} sales`;
+  sv();
+}
+// REVIEW: process
+function setRating(k,v,el){
+  const rev=curRev(); if(!rev)return; rev.pRatings[k]=v; sv();
+  el.parentElement.querySelectorAll('.rp').forEach(p=>p.classList.remove('r-ex','r-gd','r-nw'));
+  el.classList.add(v==='ex'?'r-ex':v==='gd'?'r-gd':'r-nw');
+}
+function savePNote(k,v){const rev=curRev();if(rev){rev.pNotes[k]=v;sv();}}
+
+// REVIEW: funds
+function setFund(f,v,el){
+  const rev=curRev(); if(!rev)return; rev.funds[f]=v; sv();
+  el.parentElement.querySelectorAll('.ftog').forEach(t=>t.classList.remove('f-ex','f-nt','f-nw'));
+  el.classList.add(v==='ex'?'f-ex':v==='nt'?'f-nt':'f-nw');
+  const w=document.getElementById('fn_'+f.replace(/[\s\/&]/g,'_'));
+  if(w)w.style.display=(v==='nw'||v==='nt')?'block':'none';
+}
+function saveFNote(f,v){const rev=curRev();if(rev){rev.fNotes[f]=v;sv();}}
+
+// REVIEW: pros/cons
+function renderRevNotes(arr,type){
+  if(!arr||!arr.length)return`<div style="font-size:11px;color:var(--taupe);padding:6px 0;">None logged yet.</div>`;
+  return arr.map((n,i)=>{
+    const txt=typeof n==='object'?n.text:n;
+    const ts=typeof n==='object'?n.ts:'';
+    return `<div class="note-item">
+      <span class="ndot ${type==='pros'?'nd-g':'nd-r'}"></span>
+      <div style="flex:1;"><div>${txt}</div>${ts?`<div class="note-ts">${ts}</div>`:''}</div>
+      <button class="ndel" onclick="delRevNote('${type}',${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+function addRevNote(t){
+  const id=t==='pros'?'proIn':'conIn'; const val=document.getElementById(id).value.trim(); if(!val)return;
+  const rev=curRev(); rev[t].push({text:val,ts:fmtTS()}); sv();
+  document.getElementById(id).value='';
+  document.getElementById(t==='pros'?'prosList':'consList').innerHTML=renderRevNotes(rev[t],t);
+}
+function delRevNote(t,i){
+  const rev=curRev(); rev[t].splice(i,1); sv();
+  document.getElementById(t==='pros'?'prosList':'consList').innerHTML=renderRevNotes(rev[t],t);
+}
+
+// REVIEW: lost sale patterns (checkbox-based)
+function renderLost(rev){
+  if(!rev.lostPatterns) rev.lostPatterns = {};
+  if(!rev.lostNote) rev.lostNote = '';
+  return `
+    <div class="rcard" style="padding:0;overflow:hidden;">
+      ${LOST.map((r,i) => {
+        const checked = rev.lostPatterns[r.label] || false;
+        const sn = r.step ? STEPS.find(s=>s.key===r.step)?.name : '';
+        return `
+          <div class="lp-row ${checked?'lp-checked':''}" id="lpr_${i}" onclick="togglePattern('${r.label}',${i})">
+            <div class="lp-check">${checked?'✓':''}</div>
+            <div class="lp-body">
+              <div class="lp-label">${r.label}</div>
+              ${r.tip ? `<div class="lp-teach">→ <strong>${sn}:</strong> ${r.tip}</div>` : ''}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:12px;">
+      <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--warm);margin-bottom:6px;">Additional context / notes</div>
+      <textarea class="proc-note" style="min-height:60px;" placeholder="Any specific situations or context worth noting for the review..." onchange="saveLostNote(this.value)">${rev.lostNote||''}</textarea>
+    </div>`;
+}
+
+function togglePattern(label, i){
+  const rev=curRev(); if(!rev)return;
+  if(!rev.lostPatterns) rev.lostPatterns={};
+  rev.lostPatterns[label] = !rev.lostPatterns[label];
+  sv();
+  // update just this row visually
+  const row = document.getElementById('lpr_'+i);
+  if(row){
+    row.classList.toggle('lp-checked', rev.lostPatterns[label]);
+    row.querySelector('.lp-check').textContent = rev.lostPatterns[label] ? '✓' : '';
+  }
+}
+function saveLostNote(v){const rev=curRev();if(rev){rev.lostNote=v;sv();}}
+
+// ══════════════════════════════════════
+// GENERATE AI REVIEW
+// ══════════════════════════════════════
+async function generateReview(){
+  if(!S.curId||!S.curMonth)return;
+  const s=S.staff.find(x=>x.id===S.curId); const rev=curRev();
+  const mn=MONTHS[S.curMonth-1];
+  const fC=crCalc(rev.fA,rev.fS),bC=crCalc(rev.bA,rev.bS),bld=blended(rev);
+  document.getElementById('aiContent').innerHTML=`<div style="display:flex;align-items:center;gap:10px;color:var(--taupe);font-size:13px;"><div class="ai-dots"><span></span><span></span><span></span></div>Writing ${s.name}'s review...</div>`;
+  document.getElementById('aiActs').innerHTML='';
+  const prosText=(rev.pros||[]).map(n=>typeof n==='object'?n.text:n).join(', ')||'None logged';
+  const consText=(rev.cons||[]).map(n=>typeof n==='object'?n.text:n).join(', ')||'None logged';
+  const procL=STEPS.map(st=>`${st.name}: ${rev.pRatings[st.key]||'not rated'}${rev.pNotes[st.key]?' — '+rev.pNotes[st.key]:''}`).join('\n');
+  const fundL=FUNDS.map(f=>{const v=rev.funds[f];const vLabel=v==='ex'?'Excellent':v==='nt'?'Neutral':v==='nw'?'Needs Work':'not rated';return `${f}: ${vLabel}${rev.fNotes[f]?' — '+rev.fNotes[f]:''}`;}).join('\n');
+  const checkedPatterns=LOST.filter(r=>rev.lostPatterns&&rev.lostPatterns[r.label]);
+  const lostL=checkedPatterns.length
+    ? checkedPatterns.map(r=>{const sn=r.step?STEPS.find(s=>s.key===r.step)?.name:'';return `${r.label}${sn?' (sales process: '+sn+')':''}${r.tip?' — coaching focus: '+r.tip:''}`;}).join('\n')
+    : 'No patterns identified this month';
+  const lostNote=rev.lostNote||'';
+
+  const prompt=`You are writing a monthly performance review for ${s.name}, a ${s.role||'stylist'} at Studio Minc — a premium prom, formalwear and bridal boutique in ${s.store}, Australia.
+
+MONTH: ${mn} ${S.curYear}
+
+CONVERSION RATES:
+- Blended: ${bld!==null?bld+'%':'not recorded'}
+- Formal: ${fC!==null?fC+'%':'not recorded'} (${rev.fA||0} appts, ${rev.fS||0} sales)
+- Bridal: ${bC!==null?bC+'%':'not recorded'} (${rev.bA||0} appts, ${rev.bS||0} sales)
+- Benchmarks: below 50% = needs attention, 50–64% = good, 65%+ = excellent
+
+SALES PROCESS (Greeting → 6-8 Dresses → Eliminating → Urgency → The One):
+${procL}
+
+FUNDAMENTALS:
+${fundL}
+
+POSITIVES THIS MONTH: ${prosText}
+AREAS FOR GROWTH: ${consText}
+LOST SALE PATTERNS IDENTIFIED THIS MONTH:
+${lostL}
+${lostNote?`Additional context: ${lostNote}`:''}
+
+Write a short, punchy performance review addressed directly to ${s.name} (use "you"). The stats are shown separately above the text, so do NOT repeat numbers — focus on what they mean and what to do.
+
+Write 3 short paragraphs only:
+1. One sentence acknowledging the month + their CR honestly and warmly.
+2. What they're doing well — specific, genuine, 2-3 sentences.
+3. The one or two things to focus on next month — direct, clear, kind. Reference the sales process steps where relevant.
+
+Tone: Best manager they've ever had. Warm, direct, never crushing. No fluff, no filler. No bullet points. Max 150 words total.`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    const txt=data.content?.[0]?.text||'Could not generate. Please try again.';
+    rev.ai=txt; sv(); renderProfHistory();
+    document.getElementById('aiContent').innerHTML=`<div class="ai-txt" id="aiTxt">${txt}</div><textarea class="ai-editor" id="aiEditor" style="display:none;" onchange="saveAIEdit(this.value)">${txt}</textarea>`;
+    const hdr=document.querySelector('.ai-hdr');
+    if(hdr&&!document.getElementById('aiEditBtn')){
+      const editBtn=document.createElement('button');
+      editBtn.className='ai-edit-btn'; editBtn.id='aiEditBtn'; editBtn.textContent='Edit';
+      editBtn.onclick=toggleEditAI;
+      hdr.querySelector('.ai-badge').before(editBtn);
+    }
+    document.getElementById('aiActs').innerHTML=`<button class="ai-btn ai-btn-gold" onclick="generateReview()">↺ Regenerate</button><button class="ai-btn" onclick="previewPDF()">👁 Preview</button><button class="ai-btn" onclick="expPDF()">↓ Download PDF</button><button class="ai-btn" onclick="shareWA()">WhatsApp</button><button class="ai-btn" onclick="shareSMS()">SMS</button>`;
+  }catch(e){
+    document.getElementById('aiContent').innerHTML=`<div style="color:#E88;font-size:13px;">Error generating review. Check your connection and try again.</div>`;
+    document.getElementById('aiActs').innerHTML=`<button class="ai-btn ai-btn-gold" onclick="generateReview()">Try Again</button>`;
+  }
+}
+
+// ══════════════════════════════════════
+// PDF
+// ══════════════════════════════════════
+async function expPDF(){
+  const s=S.staff.find(x=>x.id===S.curId); const rev=curRev();
+  if(!rev?.ai){alert('Generate the review first.');return;}
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
+  const fC=crCalc(rev.fA,rev.fS),bC=crCalc(rev.bA,rev.bS),bld=blended(rev);
+  const mn=MONTHS[S.curMonth-1];
+  const pageW=210,pageH=doc.internal.pageSize.getHeight();
+
+  // ── HEADER ──
+  doc.setFillColor(28,23,16); doc.rect(0,0,pageW,42,'F');
+  doc.setTextColor(250,248,244); doc.setFontSize(22); doc.setFont('times','normal');
+  doc.text('Studio Minc',16,18);
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('MONTHLY PERFORMANCE REVIEW',16,27);
+  doc.setFontSize(8); doc.setTextColor(196,186,168);
+  doc.text(`${s.name.toUpperCase()}  ·  ${mn.toUpperCase()} ${S.curYear}  ·  ${s.store.toUpperCase()}`,16,35);
+
+  // ── CR STAT BLOCKS ──
+  const stats=[];
+  if(bld!==null) stats.push({lbl:'Blended CR',val:`${bld}%`,color:bld>=65?[92,112,85]:bld>=50?[138,112,0]:[196,80,80]});
+  if(fC!==null)  stats.push({lbl:'Formal CR', val:`${fC}%`, color:fC>=65?[92,112,85]:fC>=50?[138,112,0]:[196,80,80]});
+  if(bC!==null)  stats.push({lbl:'Bridal CR', val:`${bC}%`, color:bC>=65?[92,112,85]:bC>=50?[138,112,0]:[196,80,80]});
+  const bw=Math.min(58,(pageW-20)/Math.max(stats.length,1)-2);
+  stats.forEach((st,i)=>{
+    const x=15+i*(bw+4);
+    doc.setFillColor(242,239,232); doc.rect(x,49,bw,22,'F');
+    // coloured left bar
+    doc.setFillColor(...st.color); doc.rect(x,49,3,22,'F');
+    doc.setFontSize(6.5); doc.setTextColor(140,126,106); doc.setFont('helvetica','normal');
+    doc.text(st.lbl.toUpperCase(),x+6,56.5);
+    doc.setFontSize(18); doc.setFont('times','normal'); doc.setTextColor(28,23,16);
+    doc.text(st.val,x+6,67);
+  });
+
+  let y=80;
+  doc.setDrawColor(220,214,205); doc.setLineWidth(0.3); doc.line(15,y,pageW-15,y); y+=8;
+
+  // ── SECTION LABEL helper ──
+  const secLabel=(txt,yy)=>{
+    doc.setFontSize(7); doc.setTextColor(140,126,106); doc.setFont('helvetica','normal');
+    doc.text(txt.toUpperCase(),15,yy);
+    doc.setDrawColor(220,214,205); doc.setLineWidth(0.2); doc.line(15,yy+2,pageW-15,yy+2);
+    return yy+7;
+  };
+
+  // ── SALES PROCESS ──
+  const ratedSteps=STEPS.filter(st=>rev.pRatings[st.key]);
+  if(ratedSteps.length){
+    y=secLabel('Sales Process',y);
+    const colW=(pageW-30)/STEPS.length;
+    STEPS.forEach((st,i)=>{
+      const x=15+i*colW; const r=rev.pRatings[st.key];
+      const col=r==='ex'?[92,112,85]:r==='gd'?[138,112,0]:r==='nw'?[196,80,80]:[180,180,180];
+      const lbl=r==='ex'?'Excellent':r==='gd'?'Good':r==='nw'?'Needs Work':'—';
+      doc.setFillColor(242,239,232); doc.rect(x,y,colW-2,16,'F');
+      doc.setFillColor(...col); doc.rect(x,y,colW-2,2,'F');
+      doc.setFontSize(6); doc.setTextColor(100,90,80); doc.setFont('helvetica','normal');
+      const nameLines=doc.splitTextToSize(st.name,colW-6);
+      doc.text(nameLines,x+3,y+6);
+      doc.setFontSize(7); doc.setTextColor(...col); doc.setFont('helvetica','bold');
+      doc.text(lbl,x+3,y+13);
+    });
+    y+=22;
+    // coaching notes
+    ratedSteps.filter(st=>rev.pNotes[st.key]).forEach(st=>{
+      if(y>pageH-20){doc.addPage();y=20;}
+      doc.setFontSize(7.5); doc.setTextColor(80,70,60); doc.setFont('helvetica','italic');
+      const noteTxt=`${st.name}: ${rev.pNotes[st.key]}`;
+      const noteLines=doc.splitTextToSize(noteTxt,pageW-30);
+      doc.text(noteLines,15,y); y+=noteLines.length*4+2;
+    });
+    y+=4;
+  }
+
+  // ── FUNDAMENTALS ──
+  const ratedFunds=FUNDS.filter(f=>rev.funds[f]);
+  if(ratedFunds.length){
+    if(y>pageH-60){doc.addPage();y=20;}
+    y=secLabel('Performance Fundamentals',y);
+    const fcols=3; const fw=(pageW-30)/fcols;
+    ratedFunds.forEach((f,i)=>{
+      const col=i%fcols; const row=Math.floor(i/fcols);
+      const x=15+col*fw; const fy=y+row*9;
+      if(fy>pageH-20){doc.addPage();y=20;}
+      const v=rev.funds[f];
+      const dot=v==='ex'?[92,112,85]:v==='nt'?[122,130,176]:[196,80,80];
+      doc.setFillColor(...dot); doc.circle(x+2.5,fy-1.5,1.5,'F');
+      doc.setFontSize(7.5); doc.setTextColor(50,42,35); doc.setFont('helvetica','normal');
+      doc.text(f,x+6,fy);
+      if(rev.fNotes[f]){
+        doc.setFontSize(6.5); doc.setTextColor(120,110,100); doc.setFont('helvetica','italic');
+        doc.text(rev.fNotes[f],x+6,fy+3.5);
+      }
+    });
+    y+=Math.ceil(ratedFunds.length/3)*9+6;
+  }
+
+  // ── LOST SALE PATTERNS ──
+  const checkedP=LOST.filter(r=>rev.lostPatterns&&rev.lostPatterns[r.label]);
+  if(checkedP.length){
+    if(y>pageH-40){doc.addPage();y=20;}
+    y=secLabel('Lost Sale Patterns',y);
+    checkedP.forEach(r=>{
+      if(y>pageH-15){doc.addPage();y=20;}
+      const sn=r.step?STEPS.find(s=>s.key===r.step)?.name:'';
+      doc.setFillColor(196,80,80); doc.circle(17,y-1.5,1,'F');
+      doc.setFontSize(7.5); doc.setTextColor(50,42,35); doc.setFont('helvetica','normal');
+      doc.text(r.label,20,y);
+      if(sn){doc.setFontSize(6.5); doc.setTextColor(140,126,106); doc.setFont('helvetica','italic'); doc.text(`→ Focus: ${sn}`,20,y+3.5); y+=3.5;}
+      y+=5;
+    });
+    y+=3;
+  }
+
+  // ── WRITTEN SUMMARY (starts new section, visually separated) ──
+  if(y>pageH-60){doc.addPage();y=20;}
+  doc.setDrawColor(220,214,205); doc.setLineWidth(0.3); doc.line(15,y,pageW-15,y); y+=2;
+  doc.setFillColor(28,23,16); doc.rect(15,y,pageW-30,7,'F');
+  doc.setFontSize(7.5); doc.setTextColor(250,248,244); doc.setFont('helvetica','normal');
+  doc.text('FROM YOUR MANAGER',18,y+5); y+=13;
+  doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(40,33,26);
+  const summaryLines=doc.splitTextToSize(rev.ai,pageW-30);
+  summaryLines.forEach(line=>{
+    if(y>pageH-18){doc.addPage();y=20;}
+    doc.text(line,15,y); y+=5.5;
+  });
+
+  // ── FOOTER (all pages) ──
+  const totalPages=doc.internal.getNumberOfPages();
+  for(let p=1;p<=totalPages;p++){
+    doc.setPage(p);
+    doc.setFillColor(28,23,16); doc.rect(0,pageH-11,pageW,11,'F');
+    doc.setTextColor(140,126,106); doc.setFontSize(7); doc.setFont('helvetica','normal');
+    doc.text('Studio Minc · The dress you remember forever',15,pageH-4);
+    doc.text(`${mn} ${S.curYear}  ·  ${p}/${totalPages}`,pageW-40,pageH-4);
+  }
+
+  doc.save(`StudioMinc_${s.name.replace(/\s/g,'_')}_${mn}${S.curYear}.pdf`);
+}
+
+// ══════════════════════════════════════
+// EDIT AI SUMMARY
+// ══════════════════════════════════════
+function toggleEditAI(){
+  const txt=document.getElementById('aiTxt');
+  const editor=document.getElementById('aiEditor');
+  const btn=document.getElementById('aiEditBtn');
+  if(!txt||!editor||!btn)return;
+  const editing=editor.style.display!=='none';
+  if(editing){
+    // save and switch back to display
+    const val=editor.value;
+    saveAIEdit(val);
+    txt.textContent=val;
+    txt.style.display=''; editor.style.display='none';
+    btn.textContent='Edit'; btn.style.background='rgba(255,255,255,.07)';
+  } else {
+    editor.value=txt.textContent;
+    txt.style.display='none'; editor.style.display='';
+    editor.style.height=Math.max(editor.scrollHeight,120)+'px';
+    btn.textContent='Done'; btn.style.background='rgba(201,168,76,.3)';
+    editor.focus();
+  }
+}
+function saveAIEdit(val){
+  const rev=curRev(); if(!rev)return; rev.ai=val; sv();
+}
+
+// ══════════════════════════════════════
+// PDF PREVIEW
+// ══════════════════════════════════════
+function previewPDF(){
+  const s=S.staff.find(x=>x.id===S.curId); const rev=curRev();
+  if(!rev?.ai){alert('Generate the review first.');return;}
+  const fC=crCalc(rev.fA,rev.fS),bC=crCalc(rev.bA,rev.bS),bld=blended(rev);
+  const mn=MONTHS[S.curMonth-1];
+
+  const crBadgeHTML=v=>{
+    if(v===null)return'';
+    const col=v>=65?'#5C7055':v>=50?'#8A7000':'#C45050';
+    const lbl=v>=65?'Excellent':v>=50?'Good':'Needs Attention';
+    return `<span style="display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;background:${v>=65?'#E8F3E8':v>=50?'#FFF4D9':'#F5E0E0'};color:${col};margin-left:6px;">${lbl}</span>`;
+  };
+
+  const rLabel=r=>r==='ex'?'Excellent':r==='gd'?'Good':r==='nw'?'Needs Work':'—';
+  const rCol=r=>r==='ex'?'#5C7055':r==='gd'?'#8A7000':r==='nw'?'#C45050':'#C4BAA8';
+
+  const checkedPatterns=LOST.filter(r=>rev.lostPatterns&&rev.lostPatterns[r.label]);
+  const hasPros=(rev.pros||[]).length, hasCons=(rev.cons||[]).length;
+  const ratedFunds=FUNDS.filter(f=>rev.funds[f]);
+  const fLabel=f=>{const v=rev.funds[f];return v==='ex'?'Excellent':v==='nt'?'Neutral':v==='nw'?'Needs Work':'';};
+  const fCol=f=>{const v=rev.funds[f];return v==='ex'?'#5C7055':v==='nt'?'#4A5280':'#C45050';};
+
+  const html=`
+    <div style="font-family:'DM Sans',sans-serif;max-width:680px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12);">
+
+      <!-- HEADER -->
+      <div style="background:#1C1710;padding:24px 28px;">
+        <div style="font-family:'Georgia',serif;font-size:22px;color:#FAF8F4;font-weight:300;letter-spacing:.06em;">Studio Minc</div>
+        <div style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#C4BAA8;margin-top:4px;">Monthly Performance Review</div>
+        <div style="font-size:11px;color:#8C7E6A;margin-top:6px;">${s.name} · ${mn} ${S.curYear} · ${s.store}</div>
+      </div>
+
+      <!-- CR STATS -->
+      <div style="display:flex;gap:0;border-bottom:1px solid #E8E2D9;">
+        ${bld!==null?`<div style="flex:1;padding:16px 20px;border-right:1px solid #E8E2D9;border-left:4px solid ${bld>=65?'#5C7055':bld>=50?'#8A7000':'#C45050'};">
+          <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#8C7E6A;margin-bottom:4px;">Blended CR</div>
+          <div style="font-family:'Georgia',serif;font-size:28px;font-weight:400;color:#1C1710;line-height:1;">${bld}%</div>
+          ${crBadgeHTML(bld)}
+        </div>`:''}
+        ${fC!==null?`<div style="flex:1;padding:16px 20px;border-right:1px solid #E8E2D9;border-left:4px solid ${fC>=65?'#5C7055':fC>=50?'#8A7000':'#C45050'};">
+          <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#8C7E6A;margin-bottom:4px;">Formal CR</div>
+          <div style="font-family:'Georgia',serif;font-size:28px;font-weight:400;color:#1C1710;line-height:1;">${fC}%</div>
+          <div style="font-size:10px;color:#C4BAA8;margin-top:3px;">${rev.fA||0} appts · ${rev.fS||0} sales</div>
+        </div>`:''}
+        ${bC!==null?`<div style="flex:1;padding:16px 20px;border-left:4px solid ${bC>=65?'#5C7055':bC>=50?'#8A7000':'#C45050'};">
+          <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#8C7E6A;margin-bottom:4px;">Bridal CR</div>
+          <div style="font-family:'Georgia',serif;font-size:28px;font-weight:400;color:#1C1710;line-height:1;">${bC}%</div>
+          <div style="font-size:10px;color:#C4BAA8;margin-top:3px;">${rev.bA||0} appts · ${rev.bS||0} sales</div>
+        </div>`:''}
+      </div>
+
+      <div style="padding:24px 28px;">
+
+        <!-- SALES PROCESS -->
+        ${Object.keys(rev.pRatings).length?`
+        <div style="margin-bottom:22px;">
+          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#8C7E6A;border-bottom:1px solid #E8E2D9;padding-bottom:6px;margin-bottom:12px;">Sales Process</div>
+          <div style="display:flex;gap:8px;">
+            ${STEPS.map(st=>{const r=rev.pRatings[st.key];if(!r)return'';return`
+              <div style="flex:1;border-radius:7px;overflow:hidden;border:1px solid #E8E2D9;">
+                <div style="height:3px;background:${rCol(r)};"></div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:10px;color:#3D3329;font-weight:500;line-height:1.3;">${st.name}</div>
+                  <div style="font-size:10px;color:${rCol(r)};margin-top:4px;font-weight:500;">${rLabel(r)}</div>
+                  ${rev.pNotes[st.key]?`<div style="font-size:9px;color:#8C7E6A;margin-top:4px;font-style:italic;line-height:1.4;">${rev.pNotes[st.key]}</div>`:''}
+                </div>
+              </div>`;}).join('')}
+          </div>
+        </div>`:''}
+
+        <!-- FUNDAMENTALS -->
+        ${ratedFunds.length?`
+        <div style="margin-bottom:22px;">
+          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#8C7E6A;border-bottom:1px solid #E8E2D9;padding-bottom:6px;margin-bottom:12px;">Fundamentals</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+            ${ratedFunds.map(f=>`
+              <div style="display:flex;align-items:flex-start;gap:7px;padding:6px 0;">
+                <span style="width:7px;height:7px;border-radius:50%;background:${fCol(f)};flex-shrink:0;margin-top:3px;"></span>
+                <div>
+                  <div style="font-size:11px;color:#3D3329;">${f}</div>
+                  <div style="font-size:10px;color:${fCol(f)};font-weight:500;">${fLabel(f)}</div>
+                  ${rev.fNotes[f]?`<div style="font-size:9px;color:#8C7E6A;font-style:italic;margin-top:2px;">${rev.fNotes[f]}</div>`:''}
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>`:''}
+
+        <!-- LOST SALE PATTERNS -->
+        ${checkedPatterns.length?`
+        <div style="margin-bottom:22px;">
+          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#8C7E6A;border-bottom:1px solid #E8E2D9;padding-bottom:6px;margin-bottom:12px;">Lost Sale Patterns</div>
+          ${checkedPatterns.map(r=>{const sn=r.step?STEPS.find(s=>s.key===r.step)?.name:'';return`<div style="display:flex;gap:8px;margin-bottom:7px;"><span style="width:5px;height:5px;border-radius:50%;background:#C45050;flex-shrink:0;margin-top:5px;"></span><div><div style="font-size:12px;color:#3D3329;">${r.label}</div>${sn?`<div style="font-size:10px;color:#8C7E6A;font-style:italic;">→ Focus: ${sn}</div>`:''}</div></div>`;}).join('')}
+        </div>`:''}
+
+        <!-- FROM YOUR MANAGER -->
+        <div style="background:#1C1710;border-radius:8px;padding:18px 20px;">
+          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#C9A84C;margin-bottom:12px;">From Your Manager</div>
+          <div style="font-size:13px;line-height:1.85;color:rgba(250,248,244,.88);white-space:pre-wrap;">${rev.ai}</div>
+        </div>
+
+      </div>
+
+      <!-- FOOTER -->
+      <div style="background:#1C1710;padding:10px 28px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:10px;color:#8C7E6A;">Studio Minc · The dress you remember forever</div>
+        <div style="font-size:10px;color:#8C7E6A;">${mn} ${S.curYear}</div>
+      </div>
+    </div>`;
+
+  // open in modal overlay
+  let overlay=document.getElementById('previewOverlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='previewOverlay';
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(28,23,16,.7);z-index:700;overflow-y:auto;padding:32px 20px;';
+    overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML=`
+    <div style="max-width:720px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:white;font-weight:300;">Preview — ${s.name}'s Review</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="expPDF()" style="padding:8px 16px;border-radius:7px;background:var(--gold);border:none;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:500;">↓ Download PDF</button>
+          <button onclick="document.getElementById('previewOverlay').remove()" style="padding:8px 16px;border-radius:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:white;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;">Close</button>
+        </div>
+      </div>
+      ${html}
+    </div>`;
+}
+
+// ══════════════════════════════════════
+// SHOPIFY CSV UPLOAD & MATCHING
+// ══════════════════════════════════════
+function openShopifyUpload(){ document.getElementById('shopifyModal').style.display='flex'; }
+
+function handleShopifyDrop(e){
+  e.preventDefault();
+  document.getElementById('shopifyDropZone').style.borderColor='var(--linen)';
+  const file=e.dataTransfer.files[0];
+  if(file&&file.name.endsWith('.csv')) processShopifyCSV(file);
+  else document.getElementById('shopifyStatus').textContent='Please drop a .csv file.';
+}
+function handleShopifyFile(input){ if(input.files[0]) processShopifyCSV(input.files[0]); }
+
+function processShopifyCSV(file){
+  const status=document.getElementById('shopifyStatus');
+  const results=document.getElementById('shopifyResults');
+  status.textContent='Reading file...'; results.innerHTML='';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const rows=parseCSV(e.target.result);
+      if(!rows.length){status.textContent='No rows found in CSV.';return;}
+      const headers=Object.keys(rows[0]).map(h=>h.trim());
+
+      // Find relevant columns — Shopify exports vary slightly
+      const findCol=(...tests)=>headers.find(h=>tests.some(t=>new RegExp(t,'i').test(h)));
+      const colName=findCol('billing name','customer name','name');
+      const colFirst=findCol('billing first','first name');
+      const colLast=findCol('billing last','last name');
+      const colDate=findCol('created at','date','processed at');
+      const colTotal=findCol('^subtotal$','lineitem price','total price');
+
+      // Parse orders
+      const orders=rows.map(r=>{
+        let name=(r[colName]||'').trim();
+        if(!name&&colFirst&&colLast) name=`${r[colFirst]||''} ${r[colLast]||''}`.trim();
+        const dateStr=r[colDate]||'';
+        const totalRaw=(r[colTotal]||'0').replace(/[^0-9.]/g,'');
+        const total=parseFloat(totalRaw)||0;
+        const date=new Date(dateStr);
+        return {name:name.toLowerCase(),date,total,rawName:name};
+      }).filter(o=>o.name&&!isNaN(o.date.getTime())&&o.total>0);
+
+      // Deduplicate by order number if present (Shopify repeats rows for multi-item orders)
+      const colOrder=findCol('name','order name','order id');
+      const seen=new Set(); const deduped=[];
+      if(colOrder){
+        const groupTotals={};
+        rows.forEach(r=>{
+          const oNum=r[colOrder]||'';
+          let name=(r[colName]||'').trim();
+          if(!name&&colFirst&&colLast) name=`${r[colFirst]||''} ${r[colLast]||''}`.trim();
+          const dateStr=r[colDate]||'';
+          const total=parseFloat((r[colTotal]||'0').replace(/[^0-9.]/g,''))||0;
+          if(!groupTotals[oNum]){
+            groupTotals[oNum]={name:name.toLowerCase(),rawName:name,date:new Date(dateStr),total:0,oNum};
+          }
+          groupTotals[oNum].total+=total;
+        });
+        Object.values(groupTotals).filter(o=>o.name&&!isNaN(o.date.getTime())&&o.total>0).forEach(o=>deduped.push(o));
+      }
+      const finalOrders=deduped.length?deduped:orders;
+
+      if(!finalOrders.length){status.textContent='Could not parse orders. Check CSV has Name, Date and Total columns.';return;}
+
+      const orderMonth=finalOrders[0].date.getMonth()+1;
+      const orderYear=finalOrders[0].date.getFullYear();
+
+      // Reset revenue for this month before re-importing
+      S.staff.forEach(st=>{
+        const rev=S.reviews[rvk(st.id,orderYear,orderMonth)];
+        if(rev){rev.shopifyRevenue=0;rev.shopifyOrders=0;}
+      });
+
+      // Match orders to staff via saved customer name lists
+      const matched=[];
+      const unmatched=[];
+      finalOrders.forEach(order=>{
+        let hit=false;
+        S.staff.forEach(st=>{
+          if(hit)return;
+          const rev=S.reviews[rvk(st.id,orderYear,orderMonth)];
+          if(!rev)return;
+          const names=rev.shopifyManualMatches||[];
+          if(names.some(n=>fuzzyNameMatch(order.name,n))){
+            rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
+            rev.shopifyOrders=(rev.shopifyOrders||0)+1;
+            matched.push({...order,staffId:st.id});
+            hit=true;
+          }
+        });
+        if(!hit) unmatched.push(order);
+      });
+
+      S.pendingOrders=unmatched;
+      S.pendingOrderMonth=orderMonth;
+      S.pendingOrderYear=orderYear;
+      sv();
+
+      const totalRev=finalOrders.reduce((s,o)=>s+o.total,0);
+      results.innerHTML=`
+        <div style="border:1px solid var(--linen);border-radius:8px;overflow:hidden;margin-top:4px;">
+          <div style="background:var(--bone);padding:10px 14px;font-size:11px;font-weight:500;color:var(--deep);display:flex;gap:16px;">
+            <span>${finalOrders.length} orders</span>
+            <span>$${Math.round(totalRev).toLocaleString()} total</span>
+            <span style="color:var(--sage);">✓ ${matched.length} matched</span>
+            ${unmatched.length?`<span style="color:var(--danger);">⚠ ${unmatched.length} unmatched</span>`:''}
+          </div>
+          ${unmatched.length?`
+          <div style="padding:12px 14px;">
+            <div style="font-size:11px;color:var(--warm);margin-bottom:10px;">Assign unmatched orders to a staff member. Their name will be remembered for future imports.</div>
+            <div style="max-height:280px;overflow-y:auto;">
+            ${unmatched.map((o,i)=>`
+              <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bone);">
+                <div style="flex:1;">
+                  <div style="font-size:12px;color:var(--deep);text-transform:capitalize;">${o.rawName||'Guest'}</div>
+                  <div style="font-size:10px;color:var(--warm);">$${o.total.toFixed(2)} · ${o.date.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>
+                </div>
+                <select onchange="assignOrder(${i},this.value)" style="border:1px solid var(--linen);border-radius:6px;padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);">
+                  <option value="">— assign to —</option>
+                  ${S.staff.map(st=>`<option value="${st.id}">${st.name}</option>`).join('')}
+                </select>
+              </div>`).join('')}
+            </div>
+          </div>`
+          :`<div style="padding:12px 14px;font-size:12px;color:var(--sage);">✓ All orders matched to staff</div>`}
+        </div>`;
+      status.textContent=`✓ Processed ${finalOrders.length} orders for ${MONTHS[orderMonth-1]} ${orderYear}.`;
+      if(S.curId&&S.curMonth===orderMonth&&S.curYear===orderYear) renderReviewPanel();
+      renderHome();
+    }catch(err){
+      status.textContent='Error: '+err.message;
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function assignOrder(i,staffId){
+  if(!staffId||!S.pendingOrders)return;
+  const order=S.pendingOrders[i]; if(!order||order._done)return;
+  const rev=getMk(staffId,S.pendingOrderYear,S.pendingOrderMonth);
+  rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
+  rev.shopifyOrders=(rev.shopifyOrders||0)+1;
+  if(!rev.shopifyManualMatches)rev.shopifyManualMatches=[];
+  if(order.name&&!rev.shopifyManualMatches.includes(order.name)) rev.shopifyManualMatches.push(order.name);
+  S.pendingOrders[i]._done=true;
+  sv();
+  if(S.curId&&S.curMonth===S.pendingOrderMonth&&S.curYear===S.pendingOrderYear) renderReviewPanel();
+}
+
+function fuzzyNameMatch(a,b){
+  if(!a||!b)return false;
+  a=a.toLowerCase().trim(); b=b.toLowerCase().trim();
+  if(a===b)return true;
+  const aP=a.split(' '),bP=b.split(' ');
+  // First + last match
+  if(aP[0]===bP[0]&&aP.slice(-1)[0]===bP.slice(-1)[0])return true;
+  // First name prefix (Jess/Jessica)
+  if(aP[0].length>2&&bP[0].length>2&&(aP[0].startsWith(bP[0])||bP[0].startsWith(aP[0])))return true;
+  return false;
+}
+
+function parseCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return[];
+  const parseRow=line=>{
+    const cols=[]; let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+      else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+      else cur+=c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  };
+  const headers=parseRow(lines[0]);
+  return lines.slice(1).map(line=>{
+    const vals=parseRow(line);
+    const obj={}; headers.forEach((h,i)=>obj[h.trim()]=vals[i]||'');
+    return obj;
+  }).filter(r=>Object.values(r).some(v=>v));
+}
+
+function shareWA(){
+  const s=S.staff.find(x=>x.id===S.curId);const rev=curRev();
+  if(!rev?.ai){alert('Generate the review first.');return;}
+  const txt=`Hi ${s.name} — here's your Studio Minc performance review for ${MONTHS[S.curMonth-1]} ${S.curYear} 🌟\n\n${rev.ai}`;
+  let ph=(s.phone||'').replace(/\D/g,'');if(ph.startsWith('0'))ph='61'+ph.slice(1);
+  window.open(`https://wa.me/${ph||''}?text=${encodeURIComponent(txt)}`,'_blank');
+}
+function shareSMS(){
+  const s=S.staff.find(x=>x.id===S.curId);const rev=curRev();
+  if(!rev?.ai){alert('Generate the review first.');return;}
+  const txt=`Hi ${s.name} — your Studio Minc review for ${MONTHS[S.curMonth-1]}: ${rev.ai}`;
+  window.location.href=`sms:${s.phone||''}?body=${encodeURIComponent(txt)}`;
+}
+
+// ══════════════════════════════════════
+// FLOATING NOTEPAD
+// ══════════════════════════════════════
+function openNotepad(){
+  const now=new Date();
+  document.getElementById('npDate').textContent=now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
+  // Pre-select current staff if on profile page
+  if(S.curId){document.getElementById('npStaff').value=S.curId;}
+  renderNotepadNotes();
+  document.getElementById('notepadOverlay').style.display='flex';
+}
+function closeNotepad(){document.getElementById('notepadOverlay').style.display='none';}
+function closeNotepadOutside(e){if(e.target===document.getElementById('notepadOverlay'))closeNotepad();}
+
+function renderNotepadNotes(){
+  const staffId=document.getElementById('npStaff').value;
+  const now=new Date(); const m=now.getMonth()+1, y=now.getFullYear();
+  if(!staffId){
+    document.getElementById('npPosList').innerHTML='<div style="font-size:11px;color:var(--taupe);padding:8px 0;">Select a staff member</div>';
+    document.getElementById('npNegList').innerHTML='<div style="font-size:11px;color:var(--taupe);padding:8px 0;">Select a staff member</div>';
+    return;
+  }
+  const rev=getMk(staffId,y,m);
+  document.getElementById('npPosList').innerHTML=renderNpNotes(rev.pros||[],'pos',staffId,y,m);
+  document.getElementById('npNegList').innerHTML=renderNpNotes(rev.cons||[],'neg',staffId,y,m);
+}
+
+function renderNpNotes(arr,type,sid,y,m){
+  if(!arr.length)return`<div style="font-size:11px;color:var(--taupe);padding:6px 0 4px;">None yet</div>`;
+  return arr.map((n,i)=>{
+    const txt=typeof n==='object'?n.text:n;
+    const ts=typeof n==='object'?n.ts:'';
+    return `<div class="np-note">
+      <div class="np-note-txt">${txt}</div>
+      ${ts?`<div class="np-note-ts">${ts}</div>`:''}
+      <button class="np-note-del" onclick="delNpNote('${type}','${sid}',${y},${m},${i})">Remove</button>
+    </div>`;
+  }).join('');
+}
+
+function addNpNote(type){
+  const staffId=document.getElementById('npStaff').value; if(!staffId){alert('Select a staff member first.');return;}
+  const id=type==='pos'?'npPosIn':'npNegIn';
+  const val=document.getElementById(id).value.trim(); if(!val)return;
+  const now=new Date(); const m=now.getMonth()+1, y=now.getFullYear();
+  const rev=getMk(staffId,y,m);
+  const key=type==='pos'?'pros':'cons';
+  rev[key].push({text:val,ts:fmtTS()});
+  sv(); document.getElementById(id).value='';
+  renderNotepadNotes();
+  // If we're on the profile page for this staff and this month is open, refresh notes
+  if(S.curId===staffId&&S.curMonth===m&&S.curYear===y){
+    const listEl=document.getElementById(type==='pos'?'prosList':'consList');
+    if(listEl)listEl.innerHTML=renderRevNotes(rev[key],type==='pos'?'pros':'cons');
+  }
+}
+
+function delNpNote(type,sid,y,m,i){
+  const rev=getMk(sid,y,m); const key=type==='pos'?'pros':'cons';
+  rev[key].splice(i,1); sv(); renderNotepadNotes();
+}
+
+// ══════════════════════════════════════
+// STAFF ADD / EDIT
+// ══════════════════════════════════════
+function openAddStaff(store){
+  document.getElementById('staffModalTitle').textContent='Add Staff Member';
+  document.getElementById('sfName').value=''; document.getElementById('sfRole').value='';
+  document.getElementById('sfStore').value=store||'Gold Coast';
+  document.getElementById('sfPhone').value=''; document.getElementById('sfId').value='';
+  document.getElementById('photoPreview').style.display='none';
+  document.getElementById('photoPlus').style.display='';
+  document.getElementById('photoTxt').textContent='Upload photo';
+  document.getElementById('staffModal').style.display='flex';
+}
+function openEditStaff(){
+  const s=S.staff.find(x=>x.id===S.curId); if(!s)return;
+  document.getElementById('staffModalTitle').textContent='Edit Staff Member';
+  document.getElementById('sfName').value=s.name; document.getElementById('sfRole').value=s.role||'';
+  document.getElementById('sfStore').value=s.store; document.getElementById('sfPhone').value=s.phone||'';
+  document.getElementById('sfId').value=s.id;
+  if(s.photo){document.getElementById('photoPreview').src=s.photo;document.getElementById('photoPreview').style.display='';document.getElementById('photoPlus').style.display='none';document.getElementById('photoTxt').textContent='Change photo';}
+  else{document.getElementById('photoPreview').style.display='none';document.getElementById('photoPlus').style.display='';document.getElementById('photoTxt').textContent='Upload photo';}
+  document.getElementById('staffModal').style.display='flex';
+}
+function prevPhoto(input){
+  if(!input.files[0])return;
+  const r=new FileReader(); r.onload=e=>{
+    document.getElementById('photoPreview').src=e.target.result;
+    document.getElementById('photoPreview').style.display='';
+    document.getElementById('photoPlus').style.display='none';
+    document.getElementById('photoTxt').textContent='Change photo';
+  }; r.readAsDataURL(input.files[0]);
+}
+function saveStaff(){
+  const name=document.getElementById('sfName').value.trim(); if(!name)return;
+  const eid=document.getElementById('sfId').value;
+  const photo=document.getElementById('photoPreview').style.display!=='none'?document.getElementById('photoPreview').src:null;
+  if(eid){
+    const s=S.staff.find(x=>x.id===eid);
+    if(s){s.name=name;s.role=document.getElementById('sfRole').value.trim();s.store=document.getElementById('sfStore').value;s.phone=document.getElementById('sfPhone').value.trim();if(photo)s.photo=photo;}
+  }else{
+    S.staff.push({id:'s'+Date.now(),name,role:document.getElementById('sfRole').value.trim(),store:document.getElementById('sfStore').value,phone:document.getElementById('sfPhone').value.trim(),photo:photo||null});
+  }
+  sv(); closeModal('staffModal');
+  if(eid&&S.curId===eid){const s=S.staff.find(x=>x.id===eid);document.getElementById('profNm').textContent=s.name;document.getElementById('profMeta').textContent=`${s.role||'Stylist'} · ${s.store}`;}
+  else showHome();
+}
+
+// ══════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════
+function openSupaModal(){document.getElementById('supaModal').style.display='flex';}
+function saveSupa(){localStorage.setItem(SUK,document.getElementById('supaUrl').value.trim());localStorage.setItem(SKK,document.getElementById('supaKey').value.trim());closeModal('supaModal');checkSupa();}
+function checkSupa(){
+  const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK);
+  const el=document.getElementById('supaEl');
+  if(u&&k){el.textContent='● Connected to Supabase';el.className='sd ok';document.getElementById('supaUrl').value=u;document.getElementById('supaKey').value=k;}
+}
+async function syncSupa(){
+  const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK); if(!u||!k){openSupaModal();return;}
+  const headers={'apikey':k,'Authorization':`Bearer ${k}`};
+
+  try{
+    // ── 1. SYNC STAFF ──────────────────────────────────────────
+    const staffRes=await fetch(`${u}/rest/v1/staff?select=id,name,store_id`,{headers});
+    if(!staffRes.ok) throw new Error(`Staff fetch failed: ${staffRes.status}`);
+    const staffData=await staffRes.json();
+
+    const storeMap={'gc':'Gold Coast','syd':'Sydney','bne':'Brisbane'};
+    staffData.forEach(row=>{
+      const existing=S.staff.find(s=>s.id===String(row.id));
+      if(!existing){
+        S.staff.push({
+          id:String(row.id),
+          name:row.name||'Unknown',
+          role:'Stylist',
+          store:storeMap[row.store_id]||row.store_id||'Gold Coast',
+          phone:'',
+          photo:null,
+        });
+      } else {
+        // Update store in case it changed
+        existing.store=storeMap[row.store_id]||row.store_id||existing.store;
+      }
+    });
+
+    // ── 2. SYNC APPOINTMENTS FOR SELECTED MONTH ────────────────
+    // Fetch all appointments for the selected year/month
+    const monthStr=String(S.month).padStart(2,'0');
+    const dateFrom=`${S.year}-${monthStr}-01`;
+    const lastDay=new Date(S.year,S.month,0).getDate();
+    const dateTo=`${S.year}-${monthStr}-${lastDay}`;
+
+    const apptRes=await fetch(
+      `${u}/rest/v1/appointments?select=staff_name,outcome,type,reason,date&date=gte.${dateFrom}&date=lte.${dateTo}`,
+      {headers}
+    );
+    if(!apptRes.ok) throw new Error(`Appointments fetch failed: ${apptRes.status}`);
+    const appts=await apptRes.json();
+
+    // Group by staff_name
+    const byStaff={};
+    appts.forEach(a=>{
+      const sName=(a.staff_name||'').trim();
+      if(!sName||sName==='EMPTY')return;
+      if(!byStaff[sName])byStaff[sName]={
+        formalAppts:0,formalSales:0,
+        bridalAppts:0,bridalSales:0,
+        lostReasons:{}
+      };
+      const d=byStaff[sName];
+      const isFormal=!a.type||a.type==='formal';
+      const isBridal=a.type&&a.type!=='formal';
+      const isSold=a.outcome==='P';
+      const isLost=a.outcome&&a.outcome!=='P'&&a.outcome!=='NS'&&a.outcome!=='CX';
+
+      if(isFormal){d.formalAppts++;if(isSold)d.formalSales++;}
+      else if(isBridal){d.bridalAppts++;if(isSold)d.bridalSales++;}
+
+      // Track lost sale reasons (any non-purchase outcome with a reason)
+      if(!isSold&&a.reason&&a.reason!=='EMPTY'){
+        d.lostReasons[a.reason]=(d.lostReasons[a.reason]||0)+1;
+      }
+    });
+
+    // Write into reviews, matching staff by name
+    S.staff.forEach(st=>{
+      const d=byStaff[st.name];
+      if(!d)return;
+      const rev=getMk(st.id,S.year,S.month);
+      rev.fA=d.formalAppts;
+      rev.fS=d.formalSales;
+      rev.bA=d.bridalAppts;
+      rev.bS=d.bridalSales;
+
+      // Auto-tick lost sale patterns that match our LOST array labels
+      if(!rev.lostPatterns)rev.lostPatterns={};
+      Object.entries(d.lostReasons).forEach(([reason])=>{
+        const match=LOST.find(l=>l.label.toLowerCase()===reason.toLowerCase());
+        if(match)rev.lostPatterns[match.label]=true;
+      });
+      // Store full reason counts for display
+      rev.lostReasonCounts=d.lostReasons;
+    });
+
+    sv();
+    renderHome();
+    if(S.curId&&S.curMonth) renderReviewPanel();
+
+    const totalAppts=appts.length;
+    const staffSynced=Object.keys(byStaff).length;
+    alert(`✓ Synced ${MONTHS[S.month-1]} ${S.year}\n${staffData.length} staff · ${totalAppts} appointments · ${staffSynced} staff with data`);
+
+  }catch(e){
+    alert(`Sync failed: ${e.message}\n\nMake sure your Supabase URL and anon key are correct, and this app's domain is in your API allowlist.`);
+    console.error(e);
+  }
+}
+</script>
+</body>
+</html>
