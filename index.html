@@ -1500,13 +1500,13 @@ function processShopifyCSV(file){
       if(!rows.length){status.textContent='No rows found in CSV.';return;}
       const headers=Object.keys(rows[0]).map(h=>h.trim());
 
-      // Find relevant columns — Shopify exports vary slightly
       const findCol=(...tests)=>headers.find(h=>tests.some(t=>new RegExp(t,'i').test(h)));
-      const colName=findCol('billing name','customer name','name');
+      const colName=findCol('billing name');
       const colFirst=findCol('billing first','first name');
       const colLast=findCol('billing last','last name');
       const colDate=findCol('created at','date','processed at');
-      const colTotal=findCol('^subtotal$','lineitem price','total price');
+      const colTotal=findCol('^subtotal$','total price');
+      const colLocation=findCol('^location$');
 
       // Parse orders
       const orders=rows.map(r=>{
@@ -1516,7 +1516,8 @@ function processShopifyCSV(file){
         const totalRaw=(r[colTotal]||'0').replace(/[^0-9.]/g,'');
         const total=parseFloat(totalRaw)||0;
         const date=new Date(dateStr);
-        return {name:name.toLowerCase(),date,total,rawName:name};
+        return {name:name.toLowerCase(),date,total,rawName:name,
+          location:(r[colLocation]||'').trim()};
       }).filter(o=>o.name&&!isNaN(o.date.getTime())&&o.total>0);
 
       // Deduplicate by order number if present (Shopify repeats rows for multi-item orders)
@@ -1550,14 +1551,19 @@ function processShopifyCSV(file){
         if(rev){rev.shopifyRevenue=0;rev.shopifyOrders=0;}
       });
 
-      status.textContent='Matching orders to staff via appointment records...';
+      status.textContent='Looking up customers in appointment records...';
 
-      // Try to match via Supabase — look up customer name in appointments table
+      const matched=[]; const unmatched=[]; const onlineOrders=[];
+
+      // Separate showroom vs online orders
+      const showroomOrders=finalOrders.filter(o=>o.location);
+      const onlineOnly=finalOrders.filter(o=>!o.location);
+      onlineOrders.push(...onlineOnly);
+
+      // Fetch appointments from Supabase to match customer names to staff
       const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK);
-      const matched=[]; const unmatched=[];
 
-      if(u&&k){
-        // Fetch all appointments for this month from Supabase
+      if(u&&k&&showroomOrders.length){
         const monthStr=String(orderMonth).padStart(2,'0');
         const dateFrom=`${orderYear}-${monthStr}-01`;
         const lastDay=new Date(orderYear,orderMonth,0).getDate();
@@ -1565,12 +1571,12 @@ function processShopifyCSV(file){
 
         try{
           const res=await fetch(
-            `${u}/rest/v1/appointments?select=name,staff_name,outcome,date&date=gte.${dateFrom}&date=lte.${dateTo}&outcome=eq.P&limit=1000`,
+            `${u}/rest/v1/appointments?select=name,staff_name,outcome&date=gte.${dateFrom}&date=lte.${dateTo}&outcome=eq.P&limit=2000`,
             {headers:{'apikey':k,'Authorization':`Bearer ${k}`}}
           );
           const appts=await res.json();
 
-          // Build a lookup: customer name (lowercase) → staff name
+          // Build lookup: customer name (lower) → staff name
           const nameLookup={};
           appts.forEach(a=>{
             if(a.name&&a.staff_name&&a.staff_name!=='EMPTY'){
@@ -1578,81 +1584,33 @@ function processShopifyCSV(file){
             }
           });
 
-          finalOrders.forEach(order=>{
+          showroomOrders.forEach(order=>{
             let hit=false;
-
-            // 1. Try Supabase name lookup
-            const staffName=nameLookup[order.name]||
-              Object.keys(nameLookup).find(n=>fuzzyNameMatch(order.name,n));
-
+            // Try exact match first
+            let staffName=nameLookup[order.name];
+            // Try fuzzy match
+            if(!staffName){
+              const key=Object.keys(nameLookup).find(n=>fuzzyNameMatch(order.name,n));
+              if(key) staffName=nameLookup[key];
+            }
             if(staffName){
               const st=S.staff.find(s=>s.name.toLowerCase()===staffName.toLowerCase());
               if(st){
                 const rev=getMk(st.id,orderYear,orderMonth);
                 rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
                 rev.shopifyOrders=(rev.shopifyOrders||0)+1;
-                if(!rev.shopifyManualMatches)rev.shopifyManualMatches=[];
-                if(!rev.shopifyManualMatches.includes(order.name))rev.shopifyManualMatches.push(order.name);
                 matched.push(Object.assign({},order,{staffId:st.id,staffName:st.name}));
                 hit=true;
               }
             }
-
-            // 2. Fall back to saved manual matches
-            if(!hit){
-              S.staff.forEach(st=>{
-                if(hit)return;
-                const rev=S.reviews[rvk(st.id,orderYear,orderMonth)];
-                if(!rev)return;
-                const names=rev.shopifyManualMatches||[];
-                if(names.some(n=>fuzzyNameMatch(order.name,n))){
-                  rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
-                  rev.shopifyOrders=(rev.shopifyOrders||0)+1;
-                  matched.push(Object.assign({},order,{staffId:st.id,staffName:st.name}));
-                  hit=true;
-                }
-              });
-            }
-
-            if(!hit)unmatched.push(order);
+            if(!hit) unmatched.push(order);
           });
         }catch(e){
-          // If Supabase lookup fails, fall back to manual matches only
-          finalOrders.forEach(order=>{
-            let hit=false;
-            S.staff.forEach(st=>{
-              if(hit)return;
-              const rev=S.reviews[rvk(st.id,orderYear,orderMonth)];
-              if(!rev)return;
-              const names=rev.shopifyManualMatches||[];
-              if(names.some(n=>fuzzyNameMatch(order.name,n))){
-                rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
-                rev.shopifyOrders=(rev.shopifyOrders||0)+1;
-                matched.push(Object.assign({},order,{staffId:st.id}));
-                hit=true;
-              }
-            });
-            if(!hit)unmatched.push(order);
-          });
+          // Supabase failed — all showroom orders go to unmatched for manual assign
+          unmatched.push(...showroomOrders);
         }
       } else {
-        // No Supabase — use manual matches only
-        finalOrders.forEach(order=>{
-          let hit=false;
-          S.staff.forEach(st=>{
-            if(hit)return;
-            const rev=S.reviews[rvk(st.id,orderYear,orderMonth)];
-            if(!rev)return;
-            const names=rev.shopifyManualMatches||[];
-            if(names.some(n=>fuzzyNameMatch(order.name,n))){
-              rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
-              rev.shopifyOrders=(rev.shopifyOrders||0)+1;
-              matched.push(Object.assign({},order,{staffId:st.id}));
-              hit=true;
-            }
-          });
-          if(!hit)unmatched.push(order);
-        });
+        unmatched.push(...showroomOrders);
       }
 
       S.pendingOrders=unmatched;
@@ -1660,24 +1618,25 @@ function processShopifyCSV(file){
       S.pendingOrderYear=orderYear;
       sv();
 
-      const totalRev=finalOrders.reduce((s,o)=>s+o.total,0);
+      const showroomRev=matched.reduce((s,o)=>s+o.total,0);
       results.innerHTML=`
         <div style="border:1px solid var(--linen);border-radius:8px;overflow:hidden;margin-top:4px;">
-          <div style="background:var(--bone);padding:10px 14px;font-size:11px;font-weight:500;color:var(--deep);display:flex;gap:16px;">
-            <span>${finalOrders.length} orders</span>
-            <span>$${Math.round(totalRev).toLocaleString()} total</span>
-            <span style="color:var(--sage);">✓ ${matched.length} matched</span>
+          <div style="background:var(--bone);padding:10px 14px;font-size:11px;font-weight:500;color:var(--deep);display:flex;gap:16px;flex-wrap:wrap;">
+            <span>${finalOrders.length+onlineOrders.length} total orders</span>
+            <span style="color:var(--sage);">✓ ${matched.length} showroom matched</span>
+            <span style="color:var(--warm);">↗ ${onlineOrders.length} online (excluded)</span>
             ${unmatched.length?`<span style="color:var(--danger);">⚠ ${unmatched.length} unmatched</span>`:''}
+            <span style="font-weight:700;">Showroom revenue: $${Math.round(showroomRev).toLocaleString()}</span>
           </div>
           ${unmatched.length?`
           <div style="padding:12px 14px;">
-            <div style="font-size:11px;color:var(--warm);margin-bottom:10px;">Assign unmatched orders to a staff member. Their name will be remembered for future imports.</div>
+            <div style="font-size:11px;color:var(--warm);margin-bottom:10px;">These showroom orders couldn't be matched to a staff member — assign manually:</div>
             <div style="max-height:280px;overflow-y:auto;">
             ${unmatched.map((o,i)=>`
               <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bone);">
                 <div style="flex:1;">
                   <div style="font-size:12px;color:var(--deep);text-transform:capitalize;">${o.rawName||'Guest'}</div>
-                  <div style="font-size:10px;color:var(--warm);">$${o.total.toFixed(2)} · ${o.date.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>
+                  <div style="font-size:10px;color:var(--warm);">$${o.total.toFixed(2)} · ${o.date.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}${o.location?' · '+o.location:''}</div>
                 </div>
                 <select onchange="assignOrder(${i},this.value)" style="border:1px solid var(--linen);border-radius:6px;padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);">
                   <option value="">— assign to —</option>
@@ -1686,7 +1645,7 @@ function processShopifyCSV(file){
               </div>`).join('')}
             </div>
           </div>`
-          :`<div style="padding:12px 14px;font-size:12px;color:var(--sage);">✓ All orders matched to staff</div>`}
+          :`<div style="padding:12px 14px;font-size:12px;color:var(--sage);">✓ All showroom orders matched to staff</div>`}
         </div>`;
       status.textContent=`✓ Processed ${finalOrders.length} orders for ${MONTHS[orderMonth-1]} ${orderYear}.`;
       if(S.curId&&S.curMonth===orderMonth&&S.curYear===orderYear) renderReviewPanel();
