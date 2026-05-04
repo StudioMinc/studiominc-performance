@@ -1614,6 +1614,12 @@ function processShopifyCSV(file){
       });
       console.log('ordersByDate keys:', Object.keys(ordersByDate).sort());
       console.log('sample order dateKeys:', showroomOrders.slice(0,5).map(o=>o.dateKey+'|'+o.rawName));
+      // Check specific customers
+      const targets=['evie johnston','charlie watt','scarlett taylor','ruby watt'];
+      targets.forEach(t=>{
+        const found=showroomOrders.filter(o=>o.name===t);
+        console.log(`${t}:`, found.map(o=>o.dateKey+'=$'+o.total));
+      });
 
       // For each purchased appointment, try to find its Shopify order
       const autoMatched=[];
