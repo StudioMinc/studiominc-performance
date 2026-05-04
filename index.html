@@ -1494,7 +1494,7 @@ function processShopifyCSV(file){
   const results=document.getElementById('shopifyResults');
   status.textContent='Reading file...'; results.innerHTML='';
   const reader=new FileReader();
-  reader.onload=e=>{
+  reader.onload=async e=>{
     try{
       const rows=parseCSV(e.target.result);
       if(!rows.length){status.textContent='No rows found in CSV.';return;}
@@ -1550,25 +1550,110 @@ function processShopifyCSV(file){
         if(rev){rev.shopifyRevenue=0;rev.shopifyOrders=0;}
       });
 
-      // Match orders to staff via saved customer name lists
-      const matched=[];
-      const unmatched=[];
-      finalOrders.forEach(order=>{
-        let hit=false;
-        S.staff.forEach(st=>{
-          if(hit)return;
-          const rev=S.reviews[rvk(st.id,orderYear,orderMonth)];
-          if(!rev)return;
-          const names=rev.shopifyManualMatches||[];
-          if(names.some(n=>fuzzyNameMatch(order.name,n))){
-            rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
-            rev.shopifyOrders=(rev.shopifyOrders||0)+1;
-            matched.push({...order,staffId:st.id});
-            hit=true;
-          }
+      status.textContent='Matching orders to staff via appointment records...';
+
+      // Try to match via Supabase — look up customer name in appointments table
+      const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK);
+      const matched=[]; const unmatched=[];
+
+      if(u&&k){
+        // Fetch all appointments for this month from Supabase
+        const monthStr=String(orderMonth).padStart(2,'0');
+        const dateFrom=`${orderYear}-${monthStr}-01`;
+        const lastDay=new Date(orderYear,orderMonth,0).getDate();
+        const dateTo=`${orderYear}-${monthStr}-${lastDay}`;
+
+        try{
+          const res=await fetch(
+            `${u}/rest/v1/appointments?select=name,staff_name,outcome,date&date=gte.${dateFrom}&date=lte.${dateTo}&outcome=eq.P&limit=1000`,
+            {headers:{'apikey':k,'Authorization':`Bearer ${k}`}}
+          );
+          const appts=await res.json();
+
+          // Build a lookup: customer name (lowercase) → staff name
+          const nameLookup={};
+          appts.forEach(a=>{
+            if(a.name&&a.staff_name&&a.staff_name!=='EMPTY'){
+              nameLookup[a.name.toLowerCase().trim()]=a.staff_name.trim();
+            }
+          });
+
+          finalOrders.forEach(order=>{
+            let hit=false;
+
+            // 1. Try Supabase name lookup
+            const staffName=nameLookup[order.name]||
+              Object.keys(nameLookup).find(n=>fuzzyNameMatch(order.name,n));
+
+            if(staffName){
+              const st=S.staff.find(s=>s.name.toLowerCase()===staffName.toLowerCase());
+              if(st){
+                const rev=getMk(st.id,orderYear,orderMonth);
+                rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
+                rev.shopifyOrders=(rev.shopifyOrders||0)+1;
+                if(!rev.shopifyManualMatches)rev.shopifyManualMatches=[];
+                if(!rev.shopifyManualMatches.includes(order.name))rev.shopifyManualMatches.push(order.name);
+                matched.push(Object.assign({},order,{staffId:st.id,staffName:st.name}));
+                hit=true;
+              }
+            }
+
+            // 2. Fall back to saved manual matches
+            if(!hit){
+              S.staff.forEach(st=>{
+                if(hit)return;
+                const rev=S.reviews[rvk(st.id,orderYear,orderMonth)];
+                if(!rev)return;
+                const names=rev.shopifyManualMatches||[];
+                if(names.some(n=>fuzzyNameMatch(order.name,n))){
+                  rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
+                  rev.shopifyOrders=(rev.shopifyOrders||0)+1;
+                  matched.push(Object.assign({},order,{staffId:st.id,staffName:st.name}));
+                  hit=true;
+                }
+              });
+            }
+
+            if(!hit)unmatched.push(order);
+          });
+        }catch(e){
+          // If Supabase lookup fails, fall back to manual matches only
+          finalOrders.forEach(order=>{
+            let hit=false;
+            S.staff.forEach(st=>{
+              if(hit)return;
+              const rev=S.reviews[rvk(st.id,orderYear,orderMonth)];
+              if(!rev)return;
+              const names=rev.shopifyManualMatches||[];
+              if(names.some(n=>fuzzyNameMatch(order.name,n))){
+                rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
+                rev.shopifyOrders=(rev.shopifyOrders||0)+1;
+                matched.push(Object.assign({},order,{staffId:st.id}));
+                hit=true;
+              }
+            });
+            if(!hit)unmatched.push(order);
+          });
+        }
+      } else {
+        // No Supabase — use manual matches only
+        finalOrders.forEach(order=>{
+          let hit=false;
+          S.staff.forEach(st=>{
+            if(hit)return;
+            const rev=S.reviews[rvk(st.id,orderYear,orderMonth)];
+            if(!rev)return;
+            const names=rev.shopifyManualMatches||[];
+            if(names.some(n=>fuzzyNameMatch(order.name,n))){
+              rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
+              rev.shopifyOrders=(rev.shopifyOrders||0)+1;
+              matched.push(Object.assign({},order,{staffId:st.id}));
+              hit=true;
+            }
+          });
+          if(!hit)unmatched.push(order);
         });
-        if(!hit) unmatched.push(order);
-      });
+      }
 
       S.pendingOrders=unmatched;
       S.pendingOrderMonth=orderMonth;
