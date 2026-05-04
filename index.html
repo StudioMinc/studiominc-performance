@@ -443,6 +443,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div id="shopifyStatus" style="margin-top:14px;font-size:12px;color:var(--warm);min-height:20px;"></div>
     <div id="shopifyResults" style="margin-top:10px;"></div>
     <div class="modal-acts">
+      <button class="btn" onclick="debugShopifyMatch()">🔍 Test Match</button>
       <button class="btn" onclick="closeModal('shopifyModal')">Close</button>
     </div>
   </div>
@@ -1478,6 +1479,33 @@ function previewPDF(){
 // ══════════════════════════════════════
 // SHOPIFY CSV UPLOAD & MATCHING
 // ══════════════════════════════════════
+async function debugShopifyMatch(){
+  const status=document.getElementById('shopifyStatus');
+  const results=document.getElementById('shopifyResults');
+  const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK);
+  if(!u||!k){status.textContent='No Supabase credentials found.';return;}
+  status.textContent='Fetching April 2026 appointments from Supabase...';
+  try{
+    const res=await fetch(
+      `${u}/rest/v1/appointments?select=name,staff_name,outcome&date=gte.2026-04-01&date=lte.2026-04-30&limit=2000`,
+      {headers:{'apikey':k,'Authorization':`Bearer ${k}`}}
+    );
+    const appts=await res.json();
+    const withStaff=appts.filter(a=>a.staff_name&&a.staff_name!=='EMPTY');
+    const withName=appts.filter(a=>a.name&&a.name!=='EMPTY');
+    results.innerHTML=`<div style="border:1px solid var(--linen);border-radius:8px;padding:12px 14px;font-size:11px;">
+      <div><strong>Total appointments fetched:</strong> ${appts.length}</div>
+      <div><strong>With staff name:</strong> ${withStaff.length}</div>
+      <div><strong>With customer name:</strong> ${withName.length}</div>
+      <div style="margin-top:8px;"><strong>Sample (first 10 with staff):</strong></div>
+      ${withStaff.slice(0,10).map(a=>`<div style="padding:2px 0;color:var(--deep);">"${a.name}" → ${a.staff_name} (${a.outcome||'no outcome'})</div>`).join('')}
+    </div>`;
+    status.textContent='Done — check results below';
+  }catch(e){
+    status.textContent='Error: '+e.message;
+  }
+}
+
 function openShopifyUpload(){ document.getElementById('shopifyModal').style.display='flex'; }
 
 function handleShopifyDrop(e){
