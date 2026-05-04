@@ -333,7 +333,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </select>
       <input type="number" id="ySel" value="2026" min="2020" max="2040" style="width:66px;" onchange="onPeriod()">
     </div>
-    <button class="nb" onclick="syncSupa()">↻ Sync</button>
+    <button class="nb" onclick="manualSync()">↻ Sync</button>
     <button class="nb" onclick="openSupaModal()" style="opacity:.6;font-size:11px;">Supabase</button>
   </div>
 </nav>
@@ -543,8 +543,47 @@ function getMk(id,y,m){
 }
 const curRev=()=>S.curId&&S.curMonth?getMk(S.curId,S.curYear,S.curMonth):null;
 
-function sv(){localStorage.setItem(DK,JSON.stringify({staff:S.staff,reviews:S.reviews}));}
-function ld(){try{const d=JSON.parse(localStorage.getItem(DK)||'{}');S.staff=d.staff||[];S.reviews=d.reviews||{};}catch(e){}}
+function sv(){
+  const reviewsToSave={};
+  Object.entries(S.reviews).forEach(([k,rev])=>{
+    // Save everything except lostReasonCounts (large, recomputed on sync)
+    const clean={};
+    Object.keys(rev).forEach(key=>{if(key!=='lostReasonCounts')clean[key]=rev[key];});
+    reviewsToSave[k]=clean;
+  });
+  const staffToSave=S.staff.map(s=>{
+    const sc=Object.assign({},s);
+    if(sc.photo&&sc.photo.length>100){
+      try{localStorage.setItem('sm_photo_'+sc.id,sc.photo);}catch(e){}
+      sc.photo='__has_photo__';
+    }
+    return sc;
+  });
+  try{
+    localStorage.setItem(DK,JSON.stringify({staff:staffToSave,reviews:reviewsToSave}));
+  }catch(e){
+    try{
+      const staffNoPhoto=staffToSave.map(s=>Object.assign({},s,{photo:null}));
+      localStorage.setItem(DK,JSON.stringify({staff:staffNoPhoto,reviews:reviewsToSave}));
+    }catch(e2){
+      console.warn('localStorage full');
+    }
+  }
+}
+function ld(){
+  try{
+    const d=JSON.parse(localStorage.getItem(DK)||'{}');
+    S.staff=d.staff||[];
+    // Restore photos from separate storage
+    S.staff.forEach(s=>{
+      if(s.photo==='__has_photo__'){
+        const p=localStorage.getItem('sm_photo_'+s.id);
+        s.photo=p||null;
+      }
+    });
+    S.reviews=d.reviews||{};
+  }catch(e){}
+}
 
 const crCalc=(a,s)=>{const av=parseFloat(a),sv=parseFloat(s);return av>0?Math.round(sv/av*100):null;};
 function blended(rev){
@@ -612,7 +651,10 @@ function latestRating(id){
     sv();
   }
 
-  checkSupa(); renderHome();
+  checkSupa();
+  // Auto-sync on load if credentials exist (silent)
+  autoSync().then(()=>renderHome());
+  renderHome();
 })();
 
 function onPeriod(){
@@ -1733,9 +1775,14 @@ function saveStaff(){
   const photo=document.getElementById('photoPreview').style.display!=='none'?document.getElementById('photoPreview').src:null;
   if(eid){
     const s=S.staff.find(x=>x.id===eid);
-    if(s){s.name=name;s.role=document.getElementById('sfRole').value.trim();s.store=document.getElementById('sfStore').value;s.phone=document.getElementById('sfPhone').value.trim();if(photo)s.photo=photo;}
+    if(s){s.name=name;s.role=document.getElementById('sfRole').value.trim();s.store=document.getElementById('sfStore').value;s.phone=document.getElementById('sfPhone').value.trim();
+      if(photo){s.photo=photo;try{localStorage.setItem('sm_photo_'+s.id,photo);}catch(e){}}
+    }
   }else{
-    S.staff.push({id:'s'+Date.now(),name,role:document.getElementById('sfRole').value.trim(),store:document.getElementById('sfStore').value,phone:document.getElementById('sfPhone').value.trim(),photo:photo||null});
+    const id='s'+Date.now();
+    const newStaff={id,name,role:document.getElementById('sfRole').value.trim(),store:document.getElementById('sfStore').value,phone:document.getElementById('sfPhone').value.trim(),photo:photo||null};
+    if(photo){try{localStorage.setItem('sm_photo_'+id,photo);}catch(e){newStaff.photo=null;}}
+    S.staff.push(newStaff);
   }
   sv(); closeModal('staffModal');
   if(eid&&S.curId===eid){const s=S.staff.find(x=>x.id===eid);document.getElementById('profNm').textContent=s.name;document.getElementById('profMeta').textContent=`${s.role||'Stylist'} · ${s.store}`;}
@@ -1766,90 +1813,95 @@ async function syncSupa(){
     staffData.forEach(row=>{
       const existing=S.staff.find(s=>s.id===String(row.id));
       if(!existing){
-        S.staff.push({
-          id:String(row.id),
-          name:row.name||'Unknown',
-          role:'Stylist',
-          store:storeMap[row.store_id]||row.store_id||'Gold Coast',
-          phone:'',
-          photo:null,
-        });
+        S.staff.push({id:String(row.id),name:row.name||'Unknown',role:'Stylist',store:storeMap[row.store_id]||row.store_id||'Gold Coast',phone:'',photo:null});
       } else {
-        // Update store in case it changed
         existing.store=storeMap[row.store_id]||row.store_id||existing.store;
       }
     });
 
-    // ── 2. SYNC APPOINTMENTS FOR SELECTED MONTH ────────────────
-    // Fetch all appointments for the selected year/month
-    const monthStr=String(S.month).padStart(2,'0');
-    const dateFrom=`${S.year}-${monthStr}-01`;
-    const lastDay=new Date(S.year,S.month,0).getDate();
-    const dateTo=`${S.year}-${monthStr}-${lastDay}`;
+    // ── 2. SYNC LAST 3 MONTHS ──────────────────────────────────
+    // Build list of months to sync: current + 2 previous
+    const monthsToSync=[];
+    for(let i=0;i<3;i++){
+      let m=S.month-i, y=S.year;
+      if(m<=0){m+=12;y--;}
+      monthsToSync.push({m,y});
+    }
 
-    const apptRes=await fetch(
-      `${u}/rest/v1/appointments?select=staff_name,outcome,type,reason,date&date=gte.${dateFrom}&date=lte.${dateTo}`,
-      {headers}
-    );
-    if(!apptRes.ok) throw new Error(`Appointments fetch failed: ${apptRes.status}`);
-    const appts=await apptRes.json();
+    let totalAppts=0;
+    for(const {m,y} of monthsToSync){
+      const monthStr=String(m).padStart(2,'0');
+      const dateFrom=`${y}-${monthStr}-01`;
+      const lastDay=new Date(y,m,0).getDate();
+      const dateTo=`${y}-${monthStr}-${lastDay}`;
 
-    // Group by staff_name
-    const byStaff={};
-    appts.forEach(a=>{
-      const sName=(a.staff_name||'').trim();
-      if(!sName||sName==='EMPTY')return;
-      if(!byStaff[sName])byStaff[sName]={
-        formalAppts:0,formalSales:0,
-        bridalAppts:0,bridalSales:0,
-        lostReasons:{}
-      };
-      const d=byStaff[sName];
-      const isFormal=!a.type||a.type.toLowerCase()==='formal';
-      const isBridal=a.type&&a.type.toLowerCase()!=='formal';
-      const isSold=a.outcome==='P';
-      const isLost=a.outcome&&a.outcome!=='P'&&a.outcome!=='NS'&&a.outcome!=='CX';
+      const apptRes=await fetch(
+        `${u}/rest/v1/appointments?select=staff_name,outcome,type,reason,date&date=gte.${dateFrom}&date=lte.${dateTo}&limit=1000`,
+        {headers}
+      );
+      if(!apptRes.ok) continue;
+      const appts=await apptRes.json();
+      totalAppts+=appts.length;
 
-      if(isFormal){d.formalAppts++;if(isSold)d.formalSales++;}
-      else if(isBridal){d.bridalAppts++;if(isSold)d.bridalSales++;}
-
-      // Track lost sale reasons (any non-purchase outcome with a reason)
-      if(!isSold&&a.reason&&a.reason!=='EMPTY'){
-        d.lostReasons[a.reason]=(d.lostReasons[a.reason]||0)+1;
-      }
-    });
-
-    // Write into reviews, matching staff by name
-    S.staff.forEach(st=>{
-      const d=byStaff[st.name];
-      if(!d)return;
-      const rev=getMk(st.id,S.year,S.month);
-      rev.fA=d.formalAppts;
-      rev.fS=d.formalSales;
-      rev.bA=d.bridalAppts;
-      rev.bS=d.bridalSales;
-
-      // Auto-tick lost sale patterns that match our LOST array labels
-      if(!rev.lostPatterns)rev.lostPatterns={};
-      Object.entries(d.lostReasons).forEach(([reason])=>{
-        const match=LOST.find(l=>l.label.toLowerCase()===reason.toLowerCase());
-        if(match)rev.lostPatterns[match.label]=true;
+      // Group by staff_name
+      const byStaff={};
+      appts.forEach(a=>{
+        const sName=(a.staff_name||'').trim();
+        if(!sName||sName==='EMPTY')return;
+        if(!byStaff[sName])byStaff[sName]={formalAppts:0,formalSales:0,bridalAppts:0,bridalSales:0,lostReasons:{}};
+        const d=byStaff[sName];
+        const isFormal=!a.type||a.type.toLowerCase()==='formal';
+        const isBridal=a.type&&a.type.toLowerCase()!=='formal';
+        const isSold=a.outcome==='P';
+        if(isFormal){d.formalAppts++;if(isSold)d.formalSales++;}
+        else if(isBridal){d.bridalAppts++;if(isSold)d.bridalSales++;}
+        if(!isSold&&a.reason&&a.reason!=='EMPTY'){
+          d.lostReasons[a.reason]=(d.lostReasons[a.reason]||0)+1;
+        }
       });
-      // Store full reason counts for display
-      rev.lostReasonCounts=d.lostReasons;
-    });
+
+      S.staff.forEach(st=>{
+        const d=byStaff[st.name]; if(!d)return;
+        const rev=getMk(st.id,y,m);
+        rev.fA=d.formalAppts; rev.fS=d.formalSales;
+        rev.bA=d.bridalAppts; rev.bS=d.bridalSales;
+        if(!rev.lostPatterns)rev.lostPatterns={};
+        Object.entries(d.lostReasons).forEach(([reason])=>{
+          const match=LOST.find(l=>l.label.toLowerCase()===reason.toLowerCase());
+          if(match)rev.lostPatterns[match.label]=true;
+        });
+        rev.lostReasonCounts=d.lostReasons; // in-memory only, not persisted
+      });
+    }
 
     sv();
     renderHome();
     if(S.curId&&S.curMonth) renderReviewPanel();
-
-    const totalAppts=appts.length;
-    const staffSynced=Object.keys(byStaff).length;
-    alert(`✓ Synced ${MONTHS[S.month-1]} ${S.year}\n${staffData.length} staff · ${totalAppts} appointments · ${staffSynced} staff with data`);
+    return {staffCount:staffData.length,totalAppts};
 
   }catch(e){
-    alert(`Sync failed: ${e.message}\n\nMake sure your Supabase URL and anon key are correct, and this app's domain is in your API allowlist.`);
-    console.error(e);
+    console.error('Sync failed:',e);
+    throw e;
+  }
+}
+
+async function manualSync(){
+  const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK);
+  if(!u||!k){openSupaModal();return;}
+  try{
+    const result=await syncSupa();
+    if(result) alert(`✓ Synced last 3 months\n${result.staffCount} staff · ${result.totalAppts} appointments`);
+  }catch(e){
+    alert(`Sync failed: ${e.message}`);
+  }
+}
+  const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK);
+  if(!u||!k)return;
+  try{
+    const result=await syncSupa();
+    if(result) console.log(`Auto-synced: ${result.staffCount} staff, ${result.totalAppts} appointments`);
+  }catch(e){
+    console.log('Auto-sync failed silently:', e.message);
   }
 }
 </script>
