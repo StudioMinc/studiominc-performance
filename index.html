@@ -1545,15 +1545,17 @@ function processShopifyCSV(file){
         if(!oNum)return;
         let name=(r[colName]||'').trim();
         if(!name&&colFirst&&colLast) name=`${r[colFirst]||''} ${r[colLast]||''}`.trim();
-        const dateStr=r[colDate]||'';
+        const dateStr=(r[colDate]||'').trim();
+        // Shopify dates: "2026-04-08 17:01:41 +1000" — extract just the YYYY-MM-DD part
+        const datePart=dateStr.slice(0,10);
+        const date=new Date(datePart+'T00:00:00');
         const total=parseFloat((r[colTotal]||'0').replace(/[^0-9.]/g,''))||0;
         const loc=(r[colLocation]||'').trim();
         if(!groupTotals[oNum]){
-          groupTotals[oNum]={name:name.toLowerCase(),rawName:name,date:new Date(dateStr),total:0,location:loc,dressNames:[]};
+          groupTotals[oNum]={name:name.toLowerCase(),rawName:name,date,total:0,location:loc,dressNames:[]};
         }
         groupTotals[oNum].total+=total;
         if(loc&&!groupTotals[oNum].location) groupTotals[oNum].location=loc;
-        // Capture line item (dress) names
         const lineItem=(r['Lineitem name']||'').trim();
         if(lineItem&&!groupTotals[oNum].dressNames.includes(lineItem)){
           groupTotals[oNum].dressNames.push(lineItem);
