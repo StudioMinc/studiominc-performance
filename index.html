@@ -1643,8 +1643,8 @@ function processShopifyCSV(file){
           return {order:o,score};
         }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
 
-        if(scored.length&&scored[0].score>=10){
-          // Auto-match — exact name
+        if(scored.length&&(scored[0].score>=10||scored[0].score>=6)){
+          // Auto-match — exact or strong fuzzy name match
           const o=scored[0].order;
           const st=S.staff.find(s=>s.name.toLowerCase()===appt.staff_name.toLowerCase());
           if(st){
@@ -1699,7 +1699,7 @@ function processShopifyCSV(file){
                       <div style="flex:1;">
                         <span style="font-size:12px;color:var(--deep);font-weight:${nameMatch?'600':'400'};">${o.rawName}</span>
                         ${nameMatch?`<span style="font-size:9px;color:var(--sage);margin-left:6px;">✓ name match</span>`:''}
-                        <div style="font-size:10px;color:var(--warm);">$${o.total.toFixed(2)}</div>
+                        <div style="font-size:10px;color:var(--warm);">$${o.total.toFixed(2)}${o.dressNames&&o.dressNames.length?' · '+o.dressNames.filter(d=>!d.toLowerCase().includes('garment')).slice(0,2).join(', '):''}</div>
                       </div>
                       <button style="padding:3px 10px;background:var(--ink);color:white;border:none;border-radius:5px;font-size:10px;cursor:pointer;">Confirm</button>
                     </div>`;
