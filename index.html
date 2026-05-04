@@ -1603,7 +1603,8 @@ function processShopifyCSV(file){
         {headers:{'apikey':k,'Authorization':`Bearer ${k}`}}
       );
       const purchasedAppts=await res.json();
-
+      console.log('Supabase purchased appts:', purchasedAppts.length);
+      console.log('Sample appt dates:', purchasedAppts.slice(0,5).map(a=>a.date+'|'+a.name+'|'+a.staff_name));
       // Group showroom orders by date string key for fast lookup
       const ordersByDate={};
       showroomOrders.forEach(o=>{
@@ -1611,6 +1612,8 @@ function processShopifyCSV(file){
         if(!ordersByDate[d])ordersByDate[d]=[];
         ordersByDate[d].push(o);
       });
+      console.log('ordersByDate keys:', Object.keys(ordersByDate).sort());
+      console.log('sample order dateKeys:', showroomOrders.slice(0,5).map(o=>o.dateKey+'|'+o.rawName));
 
       // For each purchased appointment, try to find its Shopify order
       const autoMatched=[];
