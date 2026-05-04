@@ -1529,12 +1529,14 @@ function processShopifyCSV(file){
       const headers=Object.keys(rows[0]).map(h=>h.trim());
 
       const findCol=(...tests)=>headers.find(h=>tests.some(t=>new RegExp(t,'i').test(h)));
-      const colName=findCol('billing name');
+      const colName=headers.find(h=>h.trim()==='Billing Name')||findCol('^billing name$');
       const colFirst=findCol('billing first','first name');
       const colLast=findCol('billing last','last name');
-      const colDate=findCol('created at','date','processed at');
-      const colTotal=findCol('^subtotal$','total price');
-      const colLocation=findCol('^location$');
+      const colDate=findCol('created at','processed at');
+      const colTotal=headers.find(h=>h.trim()==='Subtotal')||findCol('^subtotal$');
+      const colLocation=headers.find(h=>h.trim()==='Location')||findCol('^location$');
+      const colOrder=headers.find(h=>h.trim()==='Name')||findCol('^name$');
+      console.log('Columns detected:', {colName,colDate,colTotal,colLocation,colOrder});
 
       // Deduplicate by order number — Shopify repeats rows for multi-item orders
       // "Name" column = order number (#23033), "Billing Name" = customer name
