@@ -1549,11 +1549,15 @@ function processShopifyCSV(file){
         const total=parseFloat((r[colTotal]||'0').replace(/[^0-9.]/g,''))||0;
         const loc=(r[colLocation]||'').trim();
         if(!groupTotals[oNum]){
-          groupTotals[oNum]={name:name.toLowerCase(),rawName:name,date:new Date(dateStr),total:0,location:loc};
+          groupTotals[oNum]={name:name.toLowerCase(),rawName:name,date:new Date(dateStr),total:0,location:loc,dressNames:[]};
         }
         groupTotals[oNum].total+=total;
-        // Keep location if any row has it
         if(loc&&!groupTotals[oNum].location) groupTotals[oNum].location=loc;
+        // Capture line item (dress) names
+        const lineItem=(r['Lineitem name']||'').trim();
+        if(lineItem&&!groupTotals[oNum].dressNames.includes(lineItem)){
+          groupTotals[oNum].dressNames.push(lineItem);
+        }
       });
       const finalOrders=Object.values(groupTotals).filter(o=>o.name&&!isNaN(o.date.getTime())&&o.total>0);
 
@@ -1568,102 +1572,145 @@ function processShopifyCSV(file){
         if(rev){rev.shopifyRevenue=0;rev.shopifyOrders=0;}
       });
 
-      status.textContent='Looking up customers in appointment records...';
+      status.textContent='Looking up purchased appointments in Supabase...';
 
-      const matched=[]; const unmatched=[]; const onlineOrders=[];
-
-      // Separate showroom vs online orders
-      const showroomOrders=finalOrders.filter(o=>o.location);
-      const onlineOnly=finalOrders.filter(o=>!o.location);
-      onlineOrders.push(...onlineOnly);
-
-      // Fetch appointments from Supabase to match customer names to staff
       const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK);
 
-      if(u&&k&&showroomOrders.length){
-        const monthStr=String(orderMonth).padStart(2,'0');
-        const dateFrom=`${orderYear}-${monthStr}-01`;
-        const lastDay=new Date(orderYear,orderMonth,0).getDate();
-        const dateTo=`${orderYear}-${monthStr}-${lastDay}`;
+      // Separate showroom vs online
+      const showroomOrders=finalOrders.filter(o=>o.location);
+      const onlineOrders=finalOrders.filter(o=>!o.location);
 
-        try{
-          const res=await fetch(
-            `${u}/rest/v1/appointments?select=name,staff_name,outcome&date=gte.${dateFrom}&date=lte.${dateTo}&limit=2000`,
-            {headers:{'apikey':k,'Authorization':`Bearer ${k}`}}
-          );
-          const appts=await res.json();
+      // Reset revenue
+      S.staff.forEach(st=>{
+        const rev=S.reviews[rvk(st.id,orderYear,orderMonth)];
+        if(rev){rev.shopifyRevenue=0;rev.shopifyOrders=0;}
+      });
 
-          // Build lookup: customer name (lower) → staff name
-          const nameLookup={};
-          appts.forEach(a=>{
-            if(a.name&&a.name!=='EMPTY'&&a.staff_name&&a.staff_name!=='EMPTY'){
-              const key=a.name.toLowerCase().trim();
-              if(!nameLookup[key]) nameLookup[key]=a.staff_name.trim();
-            }
-          });
-
-          showroomOrders.forEach(order=>{
-            let hit=false;
-            // Try exact match first
-            let staffName=nameLookup[order.name];
-            // Try fuzzy match
-            if(!staffName){
-              const key=Object.keys(nameLookup).find(n=>fuzzyNameMatch(order.name,n));
-              if(key) staffName=nameLookup[key];
-            }
-            if(staffName){
-              const st=S.staff.find(s=>s.name.toLowerCase()===staffName.toLowerCase());
-              if(st){
-                const rev=getMk(st.id,orderYear,orderMonth);
-                rev.shopifyRevenue=(rev.shopifyRevenue||0)+order.total;
-                rev.shopifyOrders=(rev.shopifyOrders||0)+1;
-                matched.push(Object.assign({},order,{staffId:st.id,staffName:st.name}));
-                hit=true;
-              }
-            }
-            if(!hit) unmatched.push(order);
-          });
-        }catch(e){
-          // Supabase failed — all showroom orders go to unmatched for manual assign
-          unmatched.push(...showroomOrders);
-        }
-      } else {
-        unmatched.push(...showroomOrders);
+      if(!u||!k){
+        status.textContent='Connect Supabase first to match orders.';
+        return;
       }
 
-      S.pendingOrders=unmatched;
+      const monthStr=String(orderMonth).padStart(2,'0');
+      const dateFrom=`${orderYear}-${monthStr}-01`;
+      const lastDay=new Date(orderYear,orderMonth,0).getDate();
+      const dateTo=`${orderYear}-${monthStr}-${lastDay}`;
+
+      // Fetch P (purchased on day) appointments with dress data
+      const res=await fetch(
+        `${u}/rest/v1/appointments?select=id,name,staff_name,outcome,date,time,dresses,type&date=gte.${dateFrom}&date=lte.${dateTo}&outcome=eq.P&limit=2000`,
+        {headers:{'apikey':k,'Authorization':`Bearer ${k}`}}
+      );
+      const purchasedAppts=await res.json();
+
+      // Group showroom orders by date for fast lookup
+      const ordersByDate={};
+      showroomOrders.forEach(o=>{
+        const d=o.date.toISOString().slice(0,10);
+        if(!ordersByDate[d])ordersByDate[d]=[];
+        ordersByDate[d].push(o);
+      });
+
+      // For each purchased appointment, try to find its Shopify order
+      const autoMatched=[];
+      const needsConfirm=[];
+      const apptMatched=new Set();
+      const orderMatched=new Set();
+
+      purchasedAppts.forEach(appt=>{
+        if(!appt.staff_name||appt.staff_name==='EMPTY')return;
+        const dateKey=appt.date;
+        const dayOrders=ordersByDate[dateKey]||[];
+
+        // Get dress name from appointment
+        let apptDress='';
+        try{
+          const d=typeof appt.dresses==='string'?JSON.parse(appt.dresses):appt.dresses;
+          if(d&&d.length)apptDress=(d[0].name||'').toLowerCase();
+        }catch(e){}
+
+        const apptNameLower=(appt.name||'').toLowerCase().trim();
+
+        // Score each order on this day
+        const scored=dayOrders.filter(o=>!orderMatched.has(o.rawName+o.date)).map(o=>{
+          let score=0;
+          const orderNameLower=o.name;
+          // Name match
+          if(orderNameLower===apptNameLower)score+=10;
+          else if(fuzzyNameMatch(orderNameLower,apptNameLower))score+=6;
+          // Dress match
+          if(apptDress&&o.dressNames&&o.dressNames.some(d=>d.toLowerCase().includes(apptDress.slice(0,6))))score+=5;
+          return {order:o,score};
+        }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+
+        if(scored.length&&scored[0].score>=10){
+          // Auto-match — exact name
+          const o=scored[0].order;
+          const st=S.staff.find(s=>s.name.toLowerCase()===appt.staff_name.toLowerCase());
+          if(st){
+            const rev=getMk(st.id,orderYear,orderMonth);
+            rev.shopifyRevenue=(rev.shopifyRevenue||0)+o.total;
+            rev.shopifyOrders=(rev.shopifyOrders||0)+1;
+            autoMatched.push({appt,order:o,staffName:appt.staff_name});
+            orderMatched.add(o.rawName+o.date);
+            apptMatched.add(appt.id);
+          }
+        } else {
+          // Needs confirmation
+          needsConfirm.push({appt,candidates:scored.map(x=>x.order),allDayOrders:dayOrders,apptDress});
+        }
+      });
+
+      sv();
+      S.pendingConfirm=needsConfirm;
       S.pendingOrderMonth=orderMonth;
       S.pendingOrderYear=orderYear;
-      sv();
+      S.pendingOrdersByDate=ordersByDate;
 
-      const showroomRev=matched.reduce((s,o)=>s+o.total,0);
+      const showroomRev=autoMatched.reduce((s,x)=>s+x.order.total,0);
+
       results.innerHTML=`
         <div style="border:1px solid var(--linen);border-radius:8px;overflow:hidden;margin-top:4px;">
           <div style="background:var(--bone);padding:10px 14px;font-size:11px;font-weight:500;color:var(--deep);display:flex;gap:16px;flex-wrap:wrap;">
-            <span>${finalOrders.length+onlineOrders.length} total orders</span>
-            <span style="color:var(--sage);">✓ ${matched.length} showroom matched</span>
-            <span style="color:var(--warm);">↗ ${onlineOrders.length} online (excluded)</span>
-            ${unmatched.length?`<span style="color:var(--danger);">⚠ ${unmatched.length} unmatched</span>`:''}
-            <span style="font-weight:700;">Showroom revenue: $${Math.round(showroomRev).toLocaleString()}</span>
+            <span>${purchasedAppts.length} purchased appts</span>
+            <span style="color:var(--sage);">✓ ${autoMatched.length} auto-matched</span>
+            ${needsConfirm.length?`<span style="color:var(--warm);">⚠ ${needsConfirm.length} need confirmation</span>`:''}
+            <span style="color:var(--taupe);">↗ ${onlineOrders.length} online excluded</span>
+            <span style="font-weight:700;">Revenue so far: $${Math.round(showroomRev).toLocaleString()}</span>
           </div>
-          ${unmatched.length?`
-          <div style="padding:12px 14px;">
-            <div style="font-size:11px;color:var(--warm);margin-bottom:10px;">These showroom orders couldn't be matched to a staff member — assign manually:</div>
-            <div style="max-height:280px;overflow-y:auto;">
-            ${unmatched.map((o,i)=>`
-              <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bone);">
-                <div style="flex:1;">
-                  <div style="font-size:12px;color:var(--deep);text-transform:capitalize;">${o.rawName||'Guest'}</div>
-                  <div style="font-size:10px;color:var(--warm);">$${o.total.toFixed(2)} · ${o.date.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}${o.location?' · '+o.location:''}</div>
+          ${needsConfirm.length?`
+          <div style="padding:0;max-height:400px;overflow-y:auto;">
+            ${needsConfirm.map((item,i)=>{
+              const appt=item.appt;
+              const dateStr=new Date(appt.date).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
+              const dressHtml=item.apptDress?`<span style="color:var(--warm);font-size:10px;">🗒 ${item.apptDress}</span>`:'';
+              const candidateOpts=item.allDayOrders.filter(o=>!orderMatched.has(o.rawName+o.date));
+              return `<div style="padding:12px 14px;border-bottom:1px solid var(--bone);" id="confirm-${i}">
+                <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
+                  <span style="font-size:12px;font-weight:600;color:var(--deep);">${appt.staff_name}</span>
+                  <span style="font-size:10px;color:var(--taupe);">${dateStr} · ${appt.time||''}</span>
+                  <span style="font-size:11px;color:var(--deep);">${appt.name||''}</span>
+                  ${dressHtml}
                 </div>
-                <select onchange="assignOrder(${i},this.value)" style="border:1px solid var(--linen);border-radius:6px;padding:4px 8px;font-size:11px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);">
-                  <option value="">— assign to —</option>
-                  ${S.staff.map(st=>`<option value="${st.id}">${st.name}</option>`).join('')}
-                </select>
-              </div>`).join('')}
-            </div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  ${candidateOpts.length?candidateOpts.slice(0,4).map(o=>{
+                    const nameMatch=fuzzyNameMatch(o.name,appt.name.toLowerCase());
+                    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid ${nameMatch?'var(--sage)':'var(--linen)'};border-radius:6px;cursor:pointer;background:${nameMatch?'#f0f7f0':'white'};" onclick="confirmApptOrder(${i},'${o.rawName}','${appt.staff_name}',${o.total},'${appt.date}')">
+                      <div style="flex:1;">
+                        <span style="font-size:12px;color:var(--deep);font-weight:${nameMatch?'600':'400'};">${o.rawName}</span>
+                        ${nameMatch?`<span style="font-size:9px;color:var(--sage);margin-left:6px;">✓ name match</span>`:''}
+                        <div style="font-size:10px;color:var(--warm);">$${o.total.toFixed(2)}</div>
+                      </div>
+                      <button style="padding:3px 10px;background:var(--ink);color:white;border:none;border-radius:5px;font-size:10px;cursor:pointer;">Confirm</button>
+                    </div>`;
+                  }).join(''):`<div style="font-size:11px;color:var(--taupe);font-style:italic;">No Shopify orders found on this date — may be online or different day</div>`}
+                  <div style="font-size:10px;color:var(--taupe);margin-top:2px;cursor:pointer;" onclick="document.getElementById('skip-${i}').style.display='block'">Skip this appointment</div>
+                  <div id="skip-${i}" style="display:none;font-size:10px;color:var(--taupe);">Skipped ✓</div>
+                </div>
+              </div>`;
+            }).join('')}
           </div>`
-          :`<div style="padding:12px 14px;font-size:12px;color:var(--sage);">✓ All showroom orders matched to staff</div>`}
+          :`<div style="padding:12px 14px;font-size:12px;color:var(--sage);">✓ All purchased appointments matched!</div>`}
         </div>`;
       status.textContent=`✓ Processed ${finalOrders.length} orders for ${MONTHS[orderMonth-1]} ${orderYear}.`;
       if(S.curId&&S.curMonth===orderMonth&&S.curYear===orderYear) renderReviewPanel();
@@ -1674,6 +1721,23 @@ function processShopifyCSV(file){
     }
   };
   reader.readAsText(file);
+}
+
+function confirmApptOrder(confirmIdx, orderName, staffName, total, date){
+  const st=S.staff.find(s=>s.name.toLowerCase()===staffName.toLowerCase());
+  if(!st)return;
+  const m=S.pendingOrderMonth, y=S.pendingOrderYear;
+  const rev=getMk(st.id,y,m);
+  rev.shopifyRevenue=(rev.shopifyRevenue||0)+total;
+  rev.shopifyOrders=(rev.shopifyOrders||0)+1;
+  sv();
+  // Mark this confirm item as done in UI
+  const el=document.getElementById('confirm-'+confirmIdx);
+  if(el){
+    el.style.opacity='0.4';
+    el.innerHTML=`<div style="font-size:11px;color:var(--sage);padding:4px 0;">✓ Confirmed — $${total.toFixed(2)} → ${staffName}</div>`;
+  }
+  if(S.curId&&S.curMonth===m&&S.curYear===y) renderReviewPanel();
 }
 
 function assignOrder(i,staffId){
