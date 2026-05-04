@@ -1571,7 +1571,7 @@ function processShopifyCSV(file){
 
         try{
           const res=await fetch(
-            `${u}/rest/v1/appointments?select=name,staff_name,outcome&date=gte.${dateFrom}&date=lte.${dateTo}&outcome=eq.P&limit=2000`,
+            `${u}/rest/v1/appointments?select=name,staff_name,outcome&date=gte.${dateFrom}&date=lte.${dateTo}&limit=2000`,
             {headers:{'apikey':k,'Authorization':`Bearer ${k}`}}
           );
           const appts=await res.json();
@@ -1579,8 +1579,9 @@ function processShopifyCSV(file){
           // Build lookup: customer name (lower) → staff name
           const nameLookup={};
           appts.forEach(a=>{
-            if(a.name&&a.staff_name&&a.staff_name!=='EMPTY'){
-              nameLookup[a.name.toLowerCase().trim()]=a.staff_name.trim();
+            if(a.name&&a.name!=='EMPTY'&&a.staff_name&&a.staff_name!=='EMPTY'){
+              const key=a.name.toLowerCase().trim();
+              if(!nameLookup[key]) nameLookup[key]=a.staff_name.trim();
             }
           });
 
