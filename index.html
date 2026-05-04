@@ -1684,7 +1684,10 @@ function processShopifyCSV(file){
               const appt=item.appt;
               const dateStr=new Date(appt.date).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
               const dressHtml=item.apptDress?`<span style="color:var(--warm);font-size:10px;">🗒 ${item.apptDress}</span>`:'';
-              const candidateOpts=item.allDayOrders.filter(o=>!orderMatched.has(o.rawName+o.date));
+              const candidateOpts=item.allDayOrders.filter(o=>
+                !orderMatched.has(o.rawName+o.date)&&
+                fuzzyNameMatch(o.name,(appt.name||'').toLowerCase().trim())
+              );
               return `<div style="padding:12px 14px;border-bottom:1px solid var(--bone);" id="confirm-${i}">
                 <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
                   <span style="font-size:12px;font-weight:600;color:var(--deep);">${appt.staff_name}</span>
@@ -1695,11 +1698,20 @@ function processShopifyCSV(file){
                 <div style="display:flex;flex-direction:column;gap:4px;">
                   ${candidateOpts.length?candidateOpts.slice(0,4).map(o=>{
                     const nameMatch=fuzzyNameMatch(o.name,appt.name.toLowerCase());
+                const dressLine=o.dressNames&&o.dressNames.length?o.dressNames.filter(d=>
+                  !d.toLowerCase().includes('alteration')&&
+                  !d.toLowerCase().includes('showroom use')&&
+                  !d.toLowerCase().includes('garment bag')&&
+                  !d.toLowerCase().includes('bra cup')&&
+                  !d.toLowerCase().includes('pp balance')&&
+                  !d.toLowerCase().includes('hem ')&&
+                  !d.toLowerCase().includes('rush')
+                ).slice(0,1).join(''):'';
                     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid ${nameMatch?'var(--sage)':'var(--linen)'};border-radius:6px;cursor:pointer;background:${nameMatch?'#f0f7f0':'white'};" onclick="confirmApptOrder(${i},'${o.rawName}','${appt.staff_name}',${o.total},'${appt.date}')">
                       <div style="flex:1;">
                         <span style="font-size:12px;color:var(--deep);font-weight:${nameMatch?'600':'400'};">${o.rawName}</span>
                         ${nameMatch?`<span style="font-size:9px;color:var(--sage);margin-left:6px;">✓ name match</span>`:''}
-                        <div style="font-size:10px;color:var(--warm);">$${o.total.toFixed(2)}${o.dressNames&&o.dressNames.length?' · '+o.dressNames.filter(d=>!d.toLowerCase().includes('garment')).slice(0,2).join(', '):''}</div>
+                        <div style="font-size:10px;color:var(--warm);">$${o.total.toFixed(2)}${dressLine?' · '+dressLine:''}</div>
                       </div>
                       <button style="padding:3px 10px;background:var(--ink);color:white;border:none;border-radius:5px;font-size:10px;cursor:pointer;">Confirm</button>
                     </div>`;
@@ -1757,12 +1769,15 @@ function fuzzyNameMatch(a,b){
   if(!a||!b)return false;
   a=a.toLowerCase().trim(); b=b.toLowerCase().trim();
   if(a===b)return true;
-  const aP=a.split(' '),bP=b.split(' ');
-  // First + last match
-  if(aP[0]===bP[0]&&aP.slice(-1)[0]===bP.slice(-1)[0])return true;
-  // First name prefix (Jess/Jessica)
-  if(aP[0].length>2&&bP[0].length>2&&(aP[0].startsWith(bP[0])||bP[0].startsWith(aP[0])))return true;
-  return false;
+  const aP=a.split(' ').filter(Boolean);
+  const bP=b.split(' ').filter(Boolean);
+  if(aP.length<2||bP.length<2)return false;
+  const aFirst=aP[0], aLast=aP[aP.length-1];
+  const bFirst=bP[0], bLast=bP[bP.length-1];
+  // Both first and last must match (with slight prefix tolerance for nicknames)
+  const firstMatch=aFirst===bFirst||(aFirst.length>3&&bFirst.length>3&&(aFirst.startsWith(bFirst)||bFirst.startsWith(aFirst)));
+  const lastMatch=aLast===bLast;
+  return firstMatch&&lastMatch;
 }
 
 function parseCSV(text){
