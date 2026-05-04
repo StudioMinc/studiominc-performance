@@ -1546,13 +1546,12 @@ function processShopifyCSV(file){
         let name=(r[colName]||'').trim();
         if(!name&&colFirst&&colLast) name=`${r[colFirst]||''} ${r[colLast]||''}`.trim();
         const dateStr=(r[colDate]||'').trim();
-        // Shopify dates: "2026-04-08 17:01:41 +1000" — extract just the YYYY-MM-DD part
-        const datePart=dateStr.slice(0,10);
-        const date=new Date(datePart+'T00:00:00');
+        const datePart=dateStr.slice(0,10); // "2026-04-08" — keep as string key, don't convert via Date
+        const date=new Date(datePart+'T12:00:00'); // noon local to avoid timezone shift
         const total=parseFloat((r[colTotal]||'0').replace(/[^0-9.]/g,''))||0;
         const loc=(r[colLocation]||'').trim();
         if(!groupTotals[oNum]){
-          groupTotals[oNum]={name:name.toLowerCase(),rawName:name,date,total:0,location:loc,dressNames:[]};
+          groupTotals[oNum]={name:name.toLowerCase(),rawName:name,date,dateKey:datePart,total:0,location:loc,dressNames:[]};
         }
         groupTotals[oNum].total+=total;
         if(loc&&!groupTotals[oNum].location) groupTotals[oNum].location=loc;
@@ -1605,10 +1604,10 @@ function processShopifyCSV(file){
       );
       const purchasedAppts=await res.json();
 
-      // Group showroom orders by date for fast lookup
+      // Group showroom orders by date string key for fast lookup
       const ordersByDate={};
       showroomOrders.forEach(o=>{
-        const d=o.date.toISOString().slice(0,10);
+        const d=o.dateKey||o.date.toISOString().slice(0,10);
         if(!ordersByDate[d])ordersByDate[d]=[];
         ordersByDate[d].push(o);
       });
