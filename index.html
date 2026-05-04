@@ -1536,37 +1536,26 @@ function processShopifyCSV(file){
       const colTotal=findCol('^subtotal$','total price');
       const colLocation=findCol('^location$');
 
-      // Parse orders
-      const orders=rows.map(r=>{
+      // Deduplicate by order number — Shopify repeats rows for multi-item orders
+      // "Name" column = order number (#23033), "Billing Name" = customer name
+      const colOrder=findCol('^name$'); // exact match for "Name" = order number
+      const groupTotals={};
+      rows.forEach(r=>{
+        const oNum=r[colOrder]||'';
+        if(!oNum)return;
         let name=(r[colName]||'').trim();
         if(!name&&colFirst&&colLast) name=`${r[colFirst]||''} ${r[colLast]||''}`.trim();
         const dateStr=r[colDate]||'';
-        const totalRaw=(r[colTotal]||'0').replace(/[^0-9.]/g,'');
-        const total=parseFloat(totalRaw)||0;
-        const date=new Date(dateStr);
-        return {name:name.toLowerCase(),date,total,rawName:name,
-          location:(r[colLocation]||'').trim()};
-      }).filter(o=>o.name&&!isNaN(o.date.getTime())&&o.total>0);
-
-      // Deduplicate by order number if present (Shopify repeats rows for multi-item orders)
-      const colOrder=findCol('name','order name','order id');
-      const seen=new Set(); const deduped=[];
-      if(colOrder){
-        const groupTotals={};
-        rows.forEach(r=>{
-          const oNum=r[colOrder]||'';
-          let name=(r[colName]||'').trim();
-          if(!name&&colFirst&&colLast) name=`${r[colFirst]||''} ${r[colLast]||''}`.trim();
-          const dateStr=r[colDate]||'';
-          const total=parseFloat((r[colTotal]||'0').replace(/[^0-9.]/g,''))||0;
-          if(!groupTotals[oNum]){
-            groupTotals[oNum]={name:name.toLowerCase(),rawName:name,date:new Date(dateStr),total:0,oNum};
-          }
-          groupTotals[oNum].total+=total;
-        });
-        Object.values(groupTotals).filter(o=>o.name&&!isNaN(o.date.getTime())&&o.total>0).forEach(o=>deduped.push(o));
-      }
-      const finalOrders=deduped.length?deduped:orders;
+        const total=parseFloat((r[colTotal]||'0').replace(/[^0-9.]/g,''))||0;
+        const loc=(r[colLocation]||'').trim();
+        if(!groupTotals[oNum]){
+          groupTotals[oNum]={name:name.toLowerCase(),rawName:name,date:new Date(dateStr),total:0,location:loc};
+        }
+        groupTotals[oNum].total+=total;
+        // Keep location if any row has it
+        if(loc&&!groupTotals[oNum].location) groupTotals[oNum].location=loc;
+      });
+      const finalOrders=Object.values(groupTotals).filter(o=>o.name&&!isNaN(o.date.getTime())&&o.total>0);
 
       if(!finalOrders.length){status.textContent='Could not parse orders. Check CSV has Name, Date and Total columns.';return;}
 
