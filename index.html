@@ -1968,6 +1968,7 @@ async function manualSync(){
     alert(`Sync failed: ${e.message}`);
   }
 }
+async function autoSync(){
   const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK);
   if(!u||!k)return;
   try{
