@@ -468,6 +468,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="fg"><label>Phone</label><input type="text" id="sfPhone" placeholder="0412 345 678"></div>
     <input type="hidden" id="sfId">
     <div class="modal-acts">
+      <button class="btn" id="sfDeleteBtn" style="display:none;color:var(--danger);border-color:var(--danger);margin-right:auto;" onclick="deleteStaff()">Delete</button>
       <button class="btn" onclick="closeModal('staffModal')">Cancel</button>
       <button class="btn btn-ink" onclick="saveStaff()">Save</button>
     </div>
@@ -1855,6 +1856,7 @@ function openAddStaff(store){
   document.getElementById('photoPreview').style.display='none';
   document.getElementById('photoPlus').style.display='';
   document.getElementById('photoTxt').textContent='Upload photo';
+  document.getElementById('sfDeleteBtn').style.display='none';
   document.getElementById('staffModal').style.display='flex';
 }
 function openEditStaff(){
@@ -1865,7 +1867,15 @@ function openEditStaff(){
   document.getElementById('sfId').value=s.id;
   if(s.photo){document.getElementById('photoPreview').src=s.photo;document.getElementById('photoPreview').style.display='';document.getElementById('photoPlus').style.display='none';document.getElementById('photoTxt').textContent='Change photo';}
   else{document.getElementById('photoPreview').style.display='none';document.getElementById('photoPlus').style.display='';document.getElementById('photoTxt').textContent='Upload photo';}
+  document.getElementById('sfDeleteBtn').style.display='';
   document.getElementById('staffModal').style.display='flex';
+}
+function deleteStaff(){
+  const id=document.getElementById('sfId').value; if(!id)return;
+  const s=S.staff.find(x=>x.id===id); if(!s)return;
+  if(!confirm(`Remove ${s.name} from the app? This cannot be undone.`))return;
+  S.staff=S.staff.filter(x=>x.id!==id);
+  sv(); closeModal('staffModal'); showHome(); renderHome();
 }
 function prevPhoto(input){
   if(!input.files[0])return;
