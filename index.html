@@ -459,7 +459,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       </div>
       <div style="flex:1;">
         <div class="fg"><label>Full Name</label><input type="text" id="sfName" placeholder="e.g. Rhiannon"></div>
-        <div class="fg"><label>Role</label><input type="text" id="sfRole" placeholder="e.g. Stylist"></div>
+        <div class="fg"><label>Role</label>
+          <select id="sfRole">
+            <option value="Sales Stylist">Sales Stylist</option>
+            <option value="Showroom Supervisor">Showroom Supervisor</option>
+          </select>
+        </div>
       </div>
     </div>
     <div class="fg"><label>Showroom</label>
@@ -930,7 +935,7 @@ function renderReviewPanel(){
 
     <!-- SECTION 6: AI REVIEW -->
     <div class="rsec">
-      <div class="rsec-head"><span class="rsec-title">Performance Review</span><div class="rsec-line"></div></div>
+      <div class="rsec-head"><span class="rsec-title">Personal Review</span><div class="rsec-line"></div></div>
       <div class="ai-panel">
         <div class="ai-hdr">
           <div class="ai-title">Monthly Review for ${s.name}</div>
@@ -955,6 +960,99 @@ function renderReviewPanel(){
         </div>
       </div>
     </div>
+
+    ${s.role==='Showroom Supervisor'?`
+    <!-- MY TEAM SECTION — Supervisors only -->
+    <div class="rsec">
+      <div class="rsec-head"><span class="rsec-title">My Team — ${s.store}</span><div class="rsec-line"></div></div>
+      ${(()=>{
+        // Get all staff in same store, excluding this supervisor
+        const teamStaff=S.staff.filter(ts=>ts.store===s.store&&ts.id!==s.id);
+        if(!teamStaff.length) return `<div style="font-size:12px;color:var(--warm);font-style:italic;">No other staff in this showroom yet.</div>`;
+
+        // Store blended CR
+        let storeFa=0,storeFs=0,storeBa=0,storeBs=0;
+        teamStaff.forEach(ts=>{
+          const tr=getMk(ts.id,S.curYear,S.curMonth);
+          storeFa+=parseFloat(tr.fA)||0; storeFs+=parseFloat(tr.fS)||0;
+          storeBa+=parseFloat(tr.bA)||0; storeBs+=parseFloat(tr.bS)||0;
+        });
+        const storeTotalA=storeFa+storeBa, storeTotalS=storeFs+storeBs;
+        const storeBlended=storeTotalA>0?Math.round(storeTotalS/storeTotalA*100):null;
+        const stepNames={greeting:'Greeting',dresses:'6–8 Dresses',eliminating:'Eliminating',urgency:'Urgency',theone:'The One'};
+
+        return `
+        <!-- Store blended CR -->
+        <div style="background:var(--bone);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:16px;">
+          <div>
+            <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--warm);font-weight:700;">Store Blended CR</div>
+            <div style="font-size:32px;font-family:'Cormorant Garamond',serif;font-weight:300;line-height:1;">${storeBlended!==null?storeBlended+'%':'—'}</div>
+            <div style="font-size:10px;color:var(--warm);">${storeTotalA} appts · ${storeTotalS} sales · ${teamStaff.length} stylists</div>
+          </div>
+        </div>
+
+        <!-- Team member rows -->
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+          ${teamStaff.map(ts=>{
+            const tr=getMk(ts.id,S.curYear,S.curMonth);
+            const tFa=parseFloat(tr.fA)||0,tFs=parseFloat(tr.fS)||0;
+            const tBa=parseFloat(tr.bA)||0,tBs=parseFloat(tr.bS)||0;
+            const tTotal=tFa+tBa,tSales=tFs+tBs;
+            const tCR=tTotal>0?Math.round(tSales/tTotal*100):null;
+            const crColor=tCR===null?'var(--taupe)':tCR>=65?'var(--sage)':tCR>=50?'#8A7000':'var(--danger)';
+            const crBg=tCR===null?'var(--bone)':tCR>=65?'#E8F3E8':tCR>=50?'#FFF4D9':'var(--danger-l)';
+
+            // Top 3 lost sale reasons
+            const lostCounts=tr.lostReasonCounts||{};
+            const tickedLost=LOST.filter(l=>tr.lostPatterns&&tr.lostPatterns[l.label]);
+            const lostSource=Object.keys(lostCounts).length
+              ?Object.entries(lostCounts).map(([label,count])=>({label,count,step:(LOST.find(l=>l.label===label)||{}).step}))
+              :tickedLost.map(l=>({label:l.label,count:1,step:l.step}));
+            const top3=lostSource.sort((a,b)=>b.count-a.count).slice(0,3);
+
+            return `<div style="border:1px solid var(--linen);border-radius:8px;padding:12px 14px;background:white;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:${top3.length?'10px':'0'};">
+                <div style="width:36px;height:36px;border-radius:50%;background:var(--bone);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--warm);flex-shrink:0;">${ts.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</div>
+                <div style="flex:1;">
+                  <div style="font-size:13px;font-weight:500;color:var(--deep);">${ts.name}</div>
+                  <div style="font-size:10px;color:var(--warm);">${ts.role||'Sales Stylist'}</div>
+                </div>
+                <div style="padding:4px 12px;border-radius:20px;background:${crBg};color:${crColor};font-size:14px;font-weight:500;">${tCR!==null?tCR+'%':'No data'}</div>
+              </div>
+              ${top3.length?`<div style="border-top:1px solid var(--bone);padding-top:8px;display:flex;flex-direction:column;gap:4px;">
+                ${top3.map((p,i)=>`
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="width:16px;height:16px;border-radius:50%;background:var(--danger-l);color:var(--danger);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
+                    <span style="font-size:11px;color:var(--deep);">${p.label}</span>
+                    ${p.step?`<span style="font-size:9px;color:var(--warm);">→ ${stepNames[p.step]||p.step}</span>`:''}
+                    ${p.count>1?`<span style="font-size:10px;color:var(--danger);margin-left:auto;">${p.count}×</span>`:''}
+                  </div>`).join('')}
+              </div>`:''}
+            </div>`;
+          }).join('')}
+        </div>
+
+        <!-- Team AI blurb -->
+        <div class="ai-panel">
+          <div class="ai-hdr">
+            <div class="ai-title">Team Summary — ${s.store}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${rev.aiTeam?`<button class="ai-edit-btn" onclick="toggleEditTeamAI()">Edit</button>`:''}
+              <div class="ai-badge">AI Generated</div>
+            </div>
+          </div>
+          <div id="aiTeamContent">${rev.aiTeam
+            ?`<div class="ai-txt" id="aiTeamTxt">${rev.aiTeam}</div>
+               <textarea class="ai-editor" id="aiTeamEditor" style="display:none;" onchange="saveTeamAIEdit(this.value)">${rev.aiTeam}</textarea>`
+            :`<div style="font-size:13px;color:rgba(250,248,244,.4);line-height:1.7;">Generate a team summary showing store performance, coaching priorities and individual highlights.</div>`
+          }</div>
+          <div class="ai-acts">
+            <button class="ai-btn ai-btn-gold" onclick="generateTeamReview()">${rev.aiTeam?'↺ Regenerate':'Generate Team Summary →'}</button>
+          </div>
+        </div>`;
+      })()}
+    </div>`:''}
+
   </div>`;
 
   document.getElementById('profReview').innerHTML=html;
@@ -1059,6 +1157,78 @@ function saveLostNote(v){const rev=curRev();if(rev){rev.lostNote=v;sv();}}
 // ══════════════════════════════════════
 // GENERATE AI REVIEW
 // ══════════════════════════════════════
+async function generateTeamReview(){
+  const s=S.staff.find(x=>x.id===S.curId); if(!s)return;
+  const rev=curRev();
+  const teamStaff=S.staff.filter(ts=>ts.store===s.store&&ts.id!==s.id);
+  const stepNames={greeting:'Greeting',dresses:'6–8 Dresses',eliminating:'Eliminating',urgency:'Urgency',theone:'The One'};
+
+  const teamSummary=teamStaff.map(ts=>{
+    const tr=getMk(ts.id,S.curYear,S.curMonth);
+    const tFa=parseFloat(tr.fA)||0,tFs=parseFloat(tr.fS)||0;
+    const tBa=parseFloat(tr.bA)||0,tBs=parseFloat(tr.bS)||0;
+    const tTotal=tFa+tBa,tSales=tFs+tBs;
+    const tCR=tTotal>0?Math.round(tSales/tTotal*100):null;
+    const lostCounts=tr.lostReasonCounts||{};
+    const top3=Object.entries(lostCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([label])=>{
+      const match=LOST.find(l=>l.label===label);
+      return `${label}${match?.step?' ('+stepNames[match.step]+')':''}`;
+    });
+    return `${ts.name}: ${tCR!==null?tCR+'% CR':'no data'}${top3.length?' | Top lost reasons: '+top3.join(', '):''}`;
+  }).join('\n');
+
+  const storeFa=teamStaff.reduce((s,ts)=>s+(parseFloat(getMk(ts.id,S.curYear,S.curMonth).fA)||0),0);
+  const storeFs=teamStaff.reduce((s,ts)=>s+(parseFloat(getMk(ts.id,S.curYear,S.curMonth).fS)||0),0);
+  const storeBa=teamStaff.reduce((s,ts)=>s+(parseFloat(getMk(ts.id,S.curYear,S.curMonth).bA)||0),0);
+  const storeBs=teamStaff.reduce((s,ts)=>s+(parseFloat(getMk(ts.id,S.curYear,S.curMonth).bS)||0),0);
+  const storeTotal=storeFa+storeBa, storeSales=storeFs+storeBs;
+  const storeBlended=storeTotal>0?Math.round(storeSales/storeTotal*100):null;
+
+  const prompt=`You are writing a private team performance summary for ${s.name}, Showroom Supervisor at Studio Minc ${s.store}, for ${MONTHS[S.curMonth-1]} ${S.curYear}.
+
+Store blended CR: ${storeBlended!==null?storeBlended+'%':'unknown'}
+Team performance:
+${teamSummary}
+
+Write a concise 2-3 paragraph summary (max 150 words) covering:
+1. Overall store performance and whether the team is tracking well
+2. Who needs coaching attention and what specific skills to focus on (reference the lost sale patterns and which sales process step to target)
+3. Any positive highlights to acknowledge
+
+Write in a warm but direct manager tone. This is for the supervisor's eyes only — private notes to guide their coaching conversations.`;
+
+  const el=document.getElementById('aiTeamContent');
+  el.innerHTML=`<div class="ai-dots"><span></span><span></span><span></span></div>`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await resp.json();
+    const txt=data.content?.[0]?.text||'Could not generate summary.';
+    rev.aiTeam=txt; sv();
+    el.innerHTML=`<div class="ai-txt" id="aiTeamTxt">${txt}</div>
+      <textarea class="ai-editor" id="aiTeamEditor" style="display:none;" onchange="saveTeamAIEdit(this.value)">${txt}</textarea>`;
+  }catch(e){
+    el.innerHTML=`<div style="color:rgba(255,255,255,.5);">Failed to generate. Try again.</div>`;
+  }
+}
+
+function toggleEditTeamAI(){
+  const txt=document.getElementById('aiTeamTxt');
+  const ed=document.getElementById('aiTeamEditor');
+  if(!txt||!ed)return;
+  const editing=ed.style.display!=='none';
+  txt.style.display=editing?'':'none';
+  ed.style.display=editing?'none':'';
+}
+
+function saveTeamAIEdit(val){
+  const rev=curRev(); if(!rev)return;
+  rev.aiTeam=val; sv();
+}
+
 async function generateReview(){
   if(!S.curId||!S.curMonth)return;
   const s=S.staff.find(x=>x.id===S.curId); const rev=curRev();
