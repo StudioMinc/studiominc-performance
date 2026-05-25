@@ -1201,7 +1201,7 @@ Write in a warm but direct manager tone. This is for the supervisor's eyes only 
   if(el) el.innerHTML=`<div class="ai-dots"><span></span><span></span><span></span></div>`;
 
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    const resp=await fetch('/api/generate',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})
     });
@@ -1278,7 +1278,7 @@ Write 3 short paragraphs only:
 Tone: Best manager they've ever had. Warm, direct, never crushing. No fluff, no filler. No bullet points. Max 150 words total.`;
 
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})});
     const data=await res.json();
     const txt=data.content?.[0]?.text||'Could not generate. Please try again.';
     rev.ai=txt; sv(); renderProfHistory();
