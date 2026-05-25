@@ -520,21 +520,136 @@ const STEPS=[
 ];
 const FUNDS=['Reliability','Personal Presentation','Drive','Productivity','Time Management','Appointment Control','Punctuality','Reviews','Locking Up','Daily Texts / Phone','Showroom Presentation','Running Appointments on Time','Taking Feedback / Listening','Active Listening & Asking Questions'];
 const LOST=[
-  // Controllable by staff
-  {label:'Wants to sleep on it',      step:'urgency',     tip:'Create a genuine reason to decide today — stock scarcity, exclusivity, what they risk losing by waiting'},
-  {label:'Couldn\'t decide between two',step:'eliminating',tip:'Trust your eye and guide them — your job is to eliminate, not leave them with two favourites'},
-  {label:'Needs family/friends opinion',step:'theone',     tip:'Build conviction in the moment — if they feel it, help them own that feeling before they leave'},
-  {label:'Vibe felt flat',            step:'greeting',    tip:'Energy at the door sets the entire appointment — reset early if connection isn\'t there'},
-  {label:'Differing opinions',        step:'theone',      tip:'Reinforce the customer\'s own instinct — they came with an opinion, help them trust it'},
-  {label:'Nothing suited',            step:'dresses',     tip:'Go deeper on questioning upfront — style, silhouette, vibe, what they\'ve already tried'},
-  {label:'Budget',                    step:'urgency',     tip:'Anchor value before price — explore payment options early, not as a last resort'},
-  // Partially controllable
-  {label:'Had other appointments',    step:'urgency',     tip:'Create urgency to commit before they leave — other appointments dilute the moment'},
-  {label:'No parent with them',       step:'theone',      tip:'Flag this at the start and manage expectations — or help them feel confident deciding without approval'},
-  {label:'Sizing issues',             step:'dresses',     tip:'Pull styles that fit well before pulling dream styles — confidence in the fit drives the sale'},
-  {label:'School registry issues',    step:null,          tip:'Flag registry conflicts early in the appointment — admin issues shouldn\'t derail a great experience'},
-  // External
-  {label:'Other',                     step:null,          tip:null},
+  {
+    label:'Couldn\'t decide between two',
+    step:'eliminating',
+    tip:'Eliminating + The One',
+    actions:[
+      'Encourage them to trust their gut: <em>"One will give you a little bit of a feeling, just trust your gut"</em>',
+      'Get them back into their favourite dress multiple times until a decision is reached — jump on the moment and celebrate',
+      '<em>"Let\'s try it one more time and see how you feel!"</em>',
+      '<em>"Which one feels more like you?"</em>',
+      '<em>"Which one makes you feel more beautiful?"</em>',
+      '<em>"Which one gets you more excited for formal?"</em>',
+    ]
+  },
+  {
+    label:'Wants to sleep on it',
+    step:'urgency',
+    tip:'Urgency + The One',
+    actions:[
+      'Create urgency throughout the appointment by referring to school registry and stock levels',
+      '<em>"Have many girls bought dresses yet for your school? Wow, they are getting in quick!"</em>',
+      'Check stock before retrying favourites: <em>"Before we retry favourites, I\'ve just gotta check stock to see if both are available"</em>',
+      '<em>"This one is really low stock — we share our stock with online and other stores, so it won\'t last long"</em>',
+      '<em>"There is only one left, which could easily sell out by the end of the day or even the next appointment"</em>',
+    ]
+  },
+  {
+    label:'Had other appointments',
+    step:'urgency',
+    tip:'Urgency + The One',
+    actions:[
+      'URGENCY: Ensure they are aware of stock levels and the real possibility of their dress selling out or being taken by someone at their school',
+      '<em>"Let us know as soon as you have your other appointment — you can either pop back today or text us ASAP"</em>',
+      'THE ONE: Ensure they feel special and their favourite dress is very memorable — lots of compliments and assuring statements',
+      'Encourage them to visualise their entire look with styling and get excited for them',
+      '<em>"Yesss this one is amazzzinnnggg, you will look insane at formal"</em>',
+      '<em>"You look so happy in this one"</em>',
+      '<em>"I can tell you love this one"</em>',
+    ]
+  },
+  {
+    label:'Vibe felt flat',
+    step:'greeting',
+    tip:'Energy / Greeting + The One',
+    actions:[
+      'Reflect on your mood and general energy before and during the appointment',
+      'Be positive, bubbly and energetic — uplift a bad vibe by making the appointment fun, be their ultimate hype girl',
+      '<em>"Let\'s just try this for fun"</em>',
+      '<em>"Formal is a once in a lifetime experience"</em>',
+      '<em>"You only get one formal"</em>',
+    ]
+  },
+  {
+    label:'Differing opinions',
+    step:'theone',
+    tip:'The One + Urgency',
+    actions:[
+      'Agree with the other opinions to be polite, but encourage the customer to focus on how THEY feel',
+      '<em>"How you feel in a dress is the most important — whatever you feel the most confident in, you will have a better formal"</em>',
+      '<em>"Always trust your gut"</em>',
+      '<em>"A dress will give you a little feeling"</em>',
+      'URGENCY: If they need to go home for advice, remind them to do it ASAP to avoid their dress selling out',
+    ]
+  },
+  {
+    label:'Needs family/friends opinion',
+    step:'theone',
+    tip:'The One + Urgency',
+    actions:[
+      'Encourage them to FaceTime family/friends in person if they need advice to get a decision on the day',
+      'Encourage them to trust their gut: <em>"How you feel is the most important thing"</em>',
+      'If they must leave, create urgency around stock: remind them their dress could sell before they get back',
+    ]
+  },
+  {
+    label:'Nothing suited',
+    step:'dresses',
+    tip:'Energy & Greeting + 6–8 Dresses',
+    actions:[
+      'Encourage the customer to try lots of different styles — don\'t let them dismiss styles too quickly',
+      'Suggest variety and encourage them to try even if they aren\'t convinced',
+      '<em>"Just try it for fun, you might as well while you\'re here"</em>',
+      'Use product knowledge to match styles to their body and brief',
+    ]
+  },
+  {
+    label:'No parent with them',
+    step:'theone',
+    tip:'The One + Urgency',
+    actions:[
+      'Flag this at the start of the appointment and manage expectations early',
+      'Build confidence in their own decision — encourage them to trust how they feel',
+      '<em>"How you feel in the dress is what matters most"</em>',
+      'If they need parent approval, encourage a FaceTime or same-day callback to avoid losing their dress to stock',
+    ]
+  },
+  {
+    label:'Sizing issues',
+    step:'dresses',
+    tip:'6–8 Dresses + Product Knowledge',
+    actions:[
+      'Use product knowledge to suggest styles that work best for their fit and figure',
+      'Pull styles with adjustable features, corseting or stretch fabrics first',
+      'Don\'t pull dream styles until you have a style that fits well — confidence in the fit drives the sale',
+    ]
+  },
+  {
+    label:'School registry issues',
+    step:null,
+    tip:'Product Knowledge + Admin',
+    actions:[
+      'Navigate school registry conflicts early in the appointment — don\'t let it derail a great experience',
+      'Use product knowledge to suggest appropriate styles that comply with their registry',
+    ]
+  },
+  {
+    label:'Budget',
+    step:'urgency',
+    tip:'Payment Options + Value',
+    actions:[
+      'Recommend Afterpay as an option — mention it early, not as a last resort',
+      'Talk about the potential to sell the dress on marketplace after formal — many girls get a strong return',
+      'Anchor value early: <em>"This is something you\'ll remember forever and you\'ll have photos of forever"</em>',
+    ]
+  },
+  {
+    label:'Other',
+    step:null,
+    tip:null,
+    actions:[]
+  },
 ];
 
 let S={staff:[],reviews:{},curId:null,curMonth:null,curYear:null,month:null,year:null};
@@ -1129,7 +1244,12 @@ function renderLost(rev){
             <div class="lp-check">${checked?'✓':''}</div>
             <div class="lp-body">
               <div class="lp-label">${r.label}</div>
-              ${r.tip ? `<div class="lp-teach">→ <strong>${sn}:</strong> ${r.tip}</div>` : ''}
+              ${r.tip ? `<div class="lp-teach">→ <strong>${sn||r.tip}:</strong> ${sn?r.tip:''}</div>` : ''}
+              ${checked&&r.actions&&r.actions.length?`
+                <div style="margin-top:8px;padding:10px 12px;background:rgba(196,80,80,.06);border-radius:6px;border-left:3px solid var(--danger);" onclick="event.stopPropagation()">
+                  <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger);font-weight:700;margin-bottom:6px;">Actions to try</div>
+                  ${r.actions.map(a=>`<div style="font-size:11px;color:var(--deep);line-height:1.6;margin-bottom:3px;">• ${a}</div>`).join('')}
+                </div>`:''}
             </div>
           </div>`;
       }).join('')}
@@ -1254,7 +1374,11 @@ CONVERSION RATES:
 - Blended: ${bld!==null?bld+'%':'not recorded'}
 - Formal: ${fC!==null?fC+'%':'not recorded'} (${rev.fA||0} appts, ${rev.fS||0} sales)
 - Bridal: ${bC!==null?bC+'%':'not recorded'} (${rev.bA||0} appts, ${rev.bS||0} sales)
-- Benchmarks: below 50% = needs attention, 50–64% = good, 65%+ = excellent
+
+PERFORMANCE STANDARDS — be honest and direct about these:
+- 65%+ = Excellent. Acknowledge this genuinely.
+- 50–64% = Meets standard. Acknowledge the effort but push for more.
+- Below 50% = Below standard. Be kind but clear — this needs to improve. Do NOT describe below-50% as "good", "solid", "decent" or positive. Frame it as an opportunity with specific actions.
 
 SALES PROCESS (Greeting → 6-8 Dresses → Eliminating → Urgency → The One):
 ${procL}
@@ -1268,14 +1392,14 @@ LOST SALE PATTERNS IDENTIFIED THIS MONTH:
 ${lostL}
 ${lostNote?`Additional context: ${lostNote}`:''}
 
-Write a short, punchy performance review addressed directly to ${s.name} (use "you"). The stats are shown separately above the text, so do NOT repeat numbers — focus on what they mean and what to do.
+Write a short, punchy performance review addressed directly to ${s.name} (use "you"). The stats are shown separately, so do NOT repeat numbers — focus on what they mean and what to do.
 
 Write 3 short paragraphs only:
-1. One sentence acknowledging the month + their CR honestly and warmly.
-2. What they're doing well — specific, genuine, 2-3 sentences.
-3. The one or two things to focus on next month — direct, clear, kind. Reference the sales process steps where relevant.
+1. One honest sentence acknowledging the month and their CR — be accurate about whether it meets the standard or not.
+2. What they're doing well — specific and genuine, 2-3 sentences.
+3. The one or two things to focus on next month — direct, clear, actionable. Reference the specific sales process steps and real actions (urgency around stock, getting them back in the dress, trusting their gut language).
 
-Tone: Best manager they've ever had. Warm, direct, never crushing. No fluff, no filler. No bullet points. Max 150 words total.`;
+Tone: Best manager they've ever had. Warm but honest — never crushing but never false praise. No fluff. No bullet points. Max 150 words total.`;
 
   try{
     const res=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})});
