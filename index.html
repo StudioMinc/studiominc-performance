@@ -343,12 +343,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   <div class="home-wrap">
     <div class="home-hdr">
       <div><div class="home-title">Showrooms</div><div class="home-sub" id="homeSub"></div></div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button class="btn" onclick="openShopifyUpload()" style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:14px;">↑</span> Upload Shopify Export
-        </button>
-        <button class="btn btn-ink" onclick="openAddStaff(null)">+ Add Staff</button>
-      </div>
+      <button class="btn btn-ink" onclick="openAddStaff(null)">+ Add Staff</button>
     </div>
     <div id="showrooms"></div>
   </div>
@@ -819,17 +814,6 @@ function renderReviewPanel(){
       <div class="scard"><div class="scard-lbl">Blended CR</div><div class="scard-val" id="rv-bld">${bld!==null?bld+'%':'—'}</div>${badg(bld)}</div>
       <div class="scard"><div class="scard-lbl">Formal CR</div><div class="scard-val" id="rv-f">${fC!==null?fC+'%':'—'}</div><div class="scard-sub" id="rv-fs">${rev.fA||0} appts · ${rev.fS||0} sales</div></div>
       <div class="scard"><div class="scard-lbl">Bridal CR</div><div class="scard-val" id="rv-b">${bC!==null?bC+'%':'—'}</div><div class="scard-sub" id="rv-bs">${rev.bA||0} appts · ${rev.bS||0} sales</div></div>
-      ${(()=>{
-        const rev2=getMk(s.id,S.curYear,S.curMonth);
-        const rev_amt=rev2.shopifyRevenue;
-        const rev_count=rev2.shopifyOrders;
-        return `<div class="scard" style="border-color:var(--gold);background:var(--gold-l);position:relative;">
-          <div style="position:absolute;top:8px;right:8px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--warm);background:white;padding:1px 5px;border-radius:10px;">Private</div>
-          <div class="scard-lbl" style="color:var(--warm);">Revenue Generated</div>
-          <div class="scard-val" style="font-size:${rev_amt?'22px':'28px'};">${rev_amt?'$'+Math.round(rev_amt).toLocaleString():'—'}</div>
-          <div class="scard-sub">${rev_amt?`${rev_count||0} matched orders · not sent to staff`:'Upload Shopify export to populate'}</div>
-        </div>`;
-      })()}
     </div>
 
     <!-- SECTION 1: APPOINTMENTS -->
@@ -845,66 +829,6 @@ function renderReviewPanel(){
           <div class="si"><label>Sales</label><input type="number" id="bS" min="0" value="${rev.bS}" placeholder="0" onchange="updSales()"></div>
         </div>
       </div>
-
-    <!-- PRIVATE: WHAT IF UPLIFT TOOL -->
-    ${(()=>{
-      const totalAppts=(parseFloat(rev.fA)||0)+(parseFloat(rev.bA)||0);
-      const totalSales=(parseFloat(rev.fS)||0)+(parseFloat(rev.bS)||0);
-      const aov=rev.shopifyRevenue&&rev.shopifyOrders?(rev.shopifyRevenue/rev.shopifyOrders):null;
-      const currentCR=totalAppts>0?totalSales/totalAppts:null;
-      if(!aov||currentCR===null) return `
-        <div style="border:1px dashed var(--linen);border-radius:10px;padding:16px 18px;margin-bottom:26px;position:relative;">
-          <div style="position:absolute;top:10px;right:12px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--warm);background:var(--gold-l);padding:2px 7px;border-radius:10px;">Private</div>
-          <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--taupe);margin-bottom:6px;font-weight:500;">Revenue Uplift Potential</div>
-          <div style="font-size:12px;color:var(--taupe);font-style:italic;">Upload Shopify export to unlock — shows how much extra revenue ${s.name.split(' ')[0]} could generate by improving their conversion rate.</div>
-        </div>`;
-      const scenarios=[-15,-10,-5,5,10,15,20];
-      const currentRev=aov*totalSales;
-      const rows=scenarios.map(pct=>{
-        const newCR=Math.min(Math.max(currentCR+pct/100,0),1);
-        const newSales=totalAppts*newCR;
-        const extraSales=newSales-totalSales;
-        const extraRev=extraSales*aov;
-        const newRev=currentRev+extraRev;
-        return {pct,extraSales,extraRev,newRev,newCR:Math.round(newCR*100)};
-      });
-      return `
-        <div style="border:1px solid var(--gold);border-radius:10px;overflow:hidden;margin-bottom:26px;background:var(--gold-l);position:relative;">
-          <div style="position:absolute;top:10px;right:12px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--warm);background:white;padding:2px 7px;border-radius:10px;">Private · Not sent to staff</div>
-          <div style="padding:14px 18px 10px;">
-            <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--warm);margin-bottom:2px;font-weight:500;">Revenue Uplift Potential</div>
-            <div style="font-size:11px;color:var(--warm);">Based on ${s.name.split(' ')[0]}'s AOV of <strong style="color:var(--deep);">$${Math.round(aov).toLocaleString()}</strong> and ${totalAppts} appointments this month · Current CR ${Math.round(currentCR*100)}%</div>
-          </div>
-          <table style="width:100%;border-collapse:collapse;background:white;">
-            <thead>
-              <tr style="background:var(--bone);">
-                <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);font-weight:700;border-bottom:1px solid var(--linen);">If CR improves by</th>
-                <th style="padding:8px 12px;text-align:center;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);font-weight:700;border-bottom:1px solid var(--linen);">New CR</th>
-                <th style="padding:8px 12px;text-align:center;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);font-weight:700;border-bottom:1px solid var(--linen);">Extra sales</th>
-                <th style="padding:8px 12px;text-align:center;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);font-weight:700;border-bottom:1px solid var(--linen);">Extra revenue</th>
-                <th style="padding:8px 18px;text-align:right;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--warm);font-weight:700;border-bottom:1px solid var(--linen);">Total revenue</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows.map((r,i)=>{
-                const isNeg=r.pct<0;
-                const isDivider=r.pct===5&&rows.find(x=>x.pct===-5); // line between neg and pos
-                return `
-                ${isDivider?`<tr><td colspan="5" style="padding:0;"><div style="border-top:2px solid var(--linen);margin:0;"></div></td></tr>`:''}
-                <tr style="border-bottom:1px solid var(--bone);${i===rows.length-1?'border-bottom:none;':''}${isNeg?'background:#fdf7f7;':''}">
-                  <td style="padding:10px 18px;font-size:13px;font-weight:500;color:${isNeg?'var(--danger)':'var(--deep)'};">${r.pct>0?'+':''}${r.pct}%</td>
-                  <td style="padding:10px 12px;text-align:center;font-size:13px;color:${isNeg?'var(--danger)':r.newCR>=65?'var(--sage)':'var(--warm)'};font-weight:500;">${r.newCR}%</td>
-                  <td style="padding:10px 12px;text-align:center;font-size:13px;color:${isNeg?'var(--danger)':'var(--deep)'};">${r.pct>0?'+':''}${r.extraSales.toFixed(1)}</td>
-                  <td style="padding:10px 12px;text-align:center;font-size:13px;font-weight:500;color:${isNeg?'var(--danger)':'var(--sage)'};">${isNeg?'−$':'+ $'}${Math.abs(Math.round(r.extraRev)).toLocaleString()}</td>
-                  <td style="padding:10px 18px;text-align:right;font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;color:${isNeg?'var(--danger)':'var(--ink)'};">$${Math.round(r.newRev).toLocaleString()}</td>
-                </tr>`;}).join('')}
-            </tbody>
-          </table>
-          <div style="padding:10px 18px;font-size:10px;color:var(--warm);border-top:1px solid var(--linen);">
-            Current revenue this month: <strong style="color:var(--deep);">$${Math.round(currentRev).toLocaleString()}</strong> · AOV from Shopify data
-          </div>
-        </div>`;
-    })()}
 
     <!-- SECTION 2: SALES PROCESS -->
     <div class="rsec">
