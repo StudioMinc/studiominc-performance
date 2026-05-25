@@ -1530,31 +1530,123 @@ async function expPDF(){
   const checkedP=LOST.filter(r=>rev.lostPatterns&&rev.lostPatterns[r.label]);
   if(checkedP.length){
     if(y>pageH-40){doc.addPage();y=20;}
-    y=secLabel('Lost Sale Patterns',y);
+    y=secLabel('Lost Sale Patterns & Coaching Actions',y);
     checkedP.forEach(r=>{
-      if(y>pageH-15){doc.addPage();y=20;}
+      if(y>pageH-30){doc.addPage();y=20;}
       const sn=r.step?STEPS.find(s=>s.key===r.step)?.name:'';
-      doc.setFillColor(196,80,80); doc.circle(17,y-1.5,1,'F');
-      doc.setFontSize(7.5); doc.setTextColor(50,42,35); doc.setFont('helvetica','normal');
-      doc.text(r.label,20,y);
-      if(sn){doc.setFontSize(6.5); doc.setTextColor(140,126,106); doc.setFont('helvetica','italic'); doc.text(`→ Focus: ${sn}`,20,y+3.5); y+=3.5;}
-      y+=5;
+      // Pattern header
+      doc.setFillColor(245,224,224); doc.rect(15,y-3,pageW-30,6,'F');
+      doc.setFontSize(8); doc.setTextColor(196,80,80); doc.setFont('helvetica','bold');
+      doc.text(`${r.label}${sn?' → '+sn:''}`,17,y+1); y+=7;
+      // Tip
+      if(r.tip){
+        doc.setFontSize(7); doc.setTextColor(140,126,106); doc.setFont('helvetica','italic');
+        doc.text(`Principle: ${r.tip}`,17,y); y+=5;
+      }
+      // Actions
+      if(r.actions&&r.actions.length){
+        doc.setFontSize(7); doc.setTextColor(50,42,35); doc.setFont('helvetica','normal');
+        r.actions.forEach(a=>{
+          if(y>pageH-12){doc.addPage();y=20;}
+          // Strip HTML tags for PDF
+          const clean=a.replace(/<em>/g,'"').replace(/<\/em>/g,'"').replace(/<[^>]+>/g,'');
+          const lines=doc.splitTextToSize('• '+clean,pageW-36);
+          lines.forEach(line=>{
+            if(y>pageH-12){doc.addPage();y=20;}
+            doc.text(line,19,y); y+=4;
+          });
+        });
+      }
+      y+=4;
     });
     y+=3;
   }
 
-  // ── WRITTEN SUMMARY (starts new section, visually separated) ──
+  // ── WRITTEN SUMMARY ──
   if(y>pageH-60){doc.addPage();y=20;}
   doc.setDrawColor(220,214,205); doc.setLineWidth(0.3); doc.line(15,y,pageW-15,y); y+=2;
   doc.setFillColor(28,23,16); doc.rect(15,y,pageW-30,7,'F');
   doc.setFontSize(7.5); doc.setTextColor(250,248,244); doc.setFont('helvetica','normal');
   doc.text('FROM YOUR MANAGER',18,y+5); y+=13;
   doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(40,33,26);
-  const summaryLines=doc.splitTextToSize(rev.ai,pageW-30);
+  const summaryLines=doc.splitTextToSize(rev.ai||'',pageW-30);
   summaryLines.forEach(line=>{
     if(y>pageH-18){doc.addPage();y=20;}
     doc.text(line,15,y); y+=5.5;
   });
+
+  // ── SUPERVISOR TEAM SECTION ──
+  if(s.role==='Showroom Supervisor'&&rev.aiTeam){
+    doc.addPage(); y=20;
+    // Team header
+    doc.setFillColor(28,23,16); doc.rect(0,0,pageW,14,'F');
+    doc.setFontSize(9); doc.setTextColor(250,248,244); doc.setFont('helvetica','bold');
+    doc.text(`MY TEAM — ${s.store.toUpperCase()}`,15,9);
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(140,126,106);
+    doc.text('MANAGER USE ONLY · PRIVATE',pageW-15,9,{align:'right'}); y=24;
+
+    // Store blended CR
+    const teamStaff=S.staff.filter(ts=>ts.store===s.store&&ts.id!==s.id);
+    let storeFa=0,storeFs=0,storeBa=0,storeBs=0;
+    teamStaff.forEach(ts=>{
+      const tr=getMk(ts.id,S.curYear,S.curMonth);
+      storeFa+=parseFloat(tr.fA)||0; storeFs+=parseFloat(tr.fS)||0;
+      storeBa+=parseFloat(tr.bA)||0; storeBs+=parseFloat(tr.bS)||0;
+    });
+    const storeTotal=storeFa+storeBa,storeSales=storeFs+storeBs;
+    const storeBlended=storeTotal>0?Math.round(storeSales/storeTotal*100):null;
+
+    doc.setFontSize(8); doc.setTextColor(50,42,35); doc.setFont('helvetica','bold');
+    doc.text(`Store Blended CR: ${storeBlended!==null?storeBlended+'%':'—'}  ·  ${storeTotal} appts  ·  ${storeSales} sales  ·  ${teamStaff.length} stylists`,15,y); y+=10;
+
+    // Each team member
+    const stepNames={greeting:'Greeting',dresses:'6–8 Dresses',eliminating:'Eliminating',urgency:'Urgency',theone:'The One'};
+    teamStaff.forEach(ts=>{
+      if(y>pageH-30){doc.addPage();y=20;}
+      const tr=getMk(ts.id,S.curYear,S.curMonth);
+      const tFa=parseFloat(tr.fA)||0,tFs=parseFloat(tr.fS)||0;
+      const tBa=parseFloat(tr.bA)||0,tBs=parseFloat(tr.bS)||0;
+      const tTotal=tFa+tBa,tSales=tFs+tBs;
+      const tCR=tTotal>0?Math.round(tSales/tTotal*100):null;
+      const crCol=tCR===null?[140,126,106]:tCR>=65?[92,112,85]:tCR>=50?[138,112,0]:[196,80,80];
+
+      // Staff name bar
+      doc.setFillColor(242,239,232); doc.rect(15,y-3,pageW-30,6,'F');
+      doc.setFontSize(8); doc.setTextColor(...crCol); doc.setFont('helvetica','bold');
+      doc.text(`${ts.name}  ${tCR!==null?tCR+'%':'No data'}`,17,y+1);
+      doc.setFontSize(7); doc.setTextColor(140,126,106); doc.setFont('helvetica','normal');
+      doc.text(`${tTotal} appts · ${tSales} sales`,pageW-20,y+1,{align:'right'}); y+=8;
+
+      // Top 3 lost reasons
+      const lostCounts=tr.lostReasonCounts||{};
+      const top3=Object.entries(lostCounts).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      if(top3.length){
+        top3.forEach(([label,count],i)=>{
+          if(y>pageH-8){doc.addPage();y=20;}
+          const match=LOST.find(l=>l.label===label);
+          const step=match?.step?stepNames[match.step]||match.step:'';
+          doc.setFontSize(7); doc.setTextColor(50,42,35); doc.setFont('helvetica','normal');
+          doc.text(`${i+1}. ${label}${step?' → '+step:''}  (${count}×)`,19,y); y+=4.5;
+        });
+      } else {
+        doc.setFontSize(7); doc.setTextColor(140,126,106); doc.setFont('helvetica','italic');
+        doc.text('No lost sale data recorded',19,y); y+=4.5;
+      }
+      y+=4;
+    });
+
+    // Team AI summary
+    if(y>pageH-40){doc.addPage();y=20;}
+    doc.setFillColor(28,23,16); doc.rect(15,y,pageW-30,7,'F');
+    doc.setFontSize(7.5); doc.setTextColor(250,248,244); doc.setFont('helvetica','normal');
+    doc.text('TEAM SUMMARY',18,y+5); y+=13;
+    doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(40,33,26);
+    const teamLines=doc.splitTextToSize(rev.aiTeam,pageW-30);
+    teamLines.forEach(line=>{
+      if(y>pageH-18){doc.addPage();y=20;}
+      doc.text(line,15,y); y+=5.5;
+    });
+  }
 
   // ── FOOTER (all pages) ──
   const totalPages=doc.internal.getNumberOfPages();
