@@ -1247,8 +1247,15 @@ function renderLost(rev){
               ${r.tip ? `<div class="lp-teach">→ <strong>${sn||r.tip}:</strong> ${sn?r.tip:''}</div>` : ''}
               ${checked&&r.actions&&r.actions.length?`
                 <div style="margin-top:8px;padding:10px 12px;background:rgba(196,80,80,.06);border-radius:6px;border-left:3px solid var(--danger);" onclick="event.stopPropagation()">
-                  <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger);font-weight:700;margin-bottom:6px;">Actions to try</div>
-                  ${r.actions.map(a=>`<div style="font-size:11px;color:var(--deep);line-height:1.6;margin-bottom:3px;">• ${a}</div>`).join('')}
+                  <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger);font-weight:700;margin-bottom:8px;">Actions to try</div>
+                  ${r.actions.map(a=>{
+                    const isQuote=a.trim().startsWith('<em>');
+                    if(isQuote){
+                      const clean=a.replace(/<em>/g,'').replace(/<\/em>/g,'');
+                      return `<div style="font-size:12px;color:var(--deep);line-height:1.6;margin:5px 0 5px 8px;font-style:italic;border-left:2px solid var(--danger);padding-left:8px;">"${clean}"</div>`;
+                    }
+                    return `<div style="font-size:11px;color:var(--warm);line-height:1.6;margin-bottom:2px;">• ${a.replace(/<[^>]+>/g,'')}</div>`;
+                  }).join('')}
                 </div>`:''}
             </div>
           </div>`;
@@ -1545,16 +1552,28 @@ async function expPDF(){
       }
       // Actions
       if(r.actions&&r.actions.length){
-        doc.setFontSize(7); doc.setTextColor(50,42,35); doc.setFont('helvetica','normal');
         r.actions.forEach(a=>{
           if(y>pageH-12){doc.addPage();y=20;}
-          // Strip HTML tags for PDF
-          const clean=a.replace(/<em>/g,'"').replace(/<\/em>/g,'"').replace(/<[^>]+>/g,'');
-          const lines=doc.splitTextToSize('• '+clean,pageW-36);
-          lines.forEach(line=>{
-            if(y>pageH-12){doc.addPage();y=20;}
-            doc.text(line,19,y); y+=4;
-          });
+          // Detect if this is a quoted phrase (starts with <em> or contains a quote)
+          const isQuote=a.trim().startsWith('<em>');
+          const clean=a.replace(/<em>/g,'').replace(/<\/em>/g,'').replace(/<[^>]+>/g,'');
+          if(isQuote){
+            // Quoted phrase — italic, indented, in quotes
+            doc.setFontSize(7.5); doc.setTextColor(61,51,41); doc.setFont('helvetica','italic');
+            const lines=doc.splitTextToSize(`  "${clean}"`,pageW-40);
+            lines.forEach(line=>{
+              if(y>pageH-10){doc.addPage();y=20;}
+              doc.text(line,22,y); y+=4.5;
+            });
+          } else {
+            // Instruction — normal weight, bullet
+            doc.setFontSize(7); doc.setTextColor(80,70,60); doc.setFont('helvetica','normal');
+            const lines=doc.splitTextToSize('• '+clean,pageW-36);
+            lines.forEach(line=>{
+              if(y>pageH-10){doc.addPage();y=20;}
+              doc.text(line,19,y); y+=4;
+            });
+          }
         });
       }
       y+=4;
