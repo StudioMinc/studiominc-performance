@@ -956,7 +956,7 @@ function renderReviewPanel(){
                <button class="ai-btn" onclick="expPDF()">↓ Download PDF</button>
                <button class="ai-btn" onclick="shareWA()">WhatsApp</button>
                <button class="ai-btn" onclick="shareSMS()">SMS</button>`
-            :`<button class="ai-btn ai-btn-gold" onclick="generateReview()">Generate Review →</button>`}
+            :`<button class="ai-btn ai-btn-gold" onclick="generateReview()">${s.role==='Showroom Supervisor'?'Generate Personal + Team Review →':'Generate Review →'}</button>`}
         </div>
       </div>
     </div>
@@ -1047,7 +1047,7 @@ function renderReviewPanel(){
             :`<div style="font-size:13px;color:rgba(250,248,244,.4);line-height:1.7;">Generate a team summary showing store performance, coaching priorities and individual highlights.</div>`
           }</div>
           <div class="ai-acts">
-            <button class="ai-btn ai-btn-gold" onclick="generateTeamReview()">${rev.aiTeam?'↺ Regenerate':'Generate Team Summary →'}</button>
+            <button class="ai-btn ai-btn-gold" onclick="generateTeamReview()">${rev.aiTeam?'↺ Regenerate Team Summary':'Generate Team Summary →'}</button>
           </div>
         </div>`;
       })()}
@@ -1198,20 +1198,20 @@ Write a concise 2-3 paragraph summary (max 150 words) covering:
 Write in a warm but direct manager tone. This is for the supervisor's eyes only — private notes to guide their coaching conversations.`;
 
   const el=document.getElementById('aiTeamContent');
-  el.innerHTML=`<div class="ai-dots"><span></span><span></span><span></span></div>`;
+  if(el) el.innerHTML=`<div class="ai-dots"><span></span><span></span><span></span></div>`;
 
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})
     });
     const data=await resp.json();
     const txt=data.content?.[0]?.text||'Could not generate summary.';
     rev.aiTeam=txt; sv();
-    el.innerHTML=`<div class="ai-txt" id="aiTeamTxt">${txt}</div>
+    if(el) el.innerHTML=`<div class="ai-txt" id="aiTeamTxt">${txt}</div>
       <textarea class="ai-editor" id="aiTeamEditor" style="display:none;" onchange="saveTeamAIEdit(this.value)">${txt}</textarea>`;
   }catch(e){
-    el.innerHTML=`<div style="color:rgba(255,255,255,.5);">Failed to generate. Try again.</div>`;
+    if(el) el.innerHTML=`<div style="color:rgba(255,255,255,.5);">Failed to generate. Try again.</div>`;
   }
 }
 
@@ -1289,6 +1289,11 @@ Tone: Best manager they've ever had. Warm, direct, never crushing. No fluff, no 
       editBtn.className='ai-edit-btn'; editBtn.id='aiEditBtn'; editBtn.textContent='Edit';
       editBtn.onclick=toggleEditAI;
       hdr.querySelector('.ai-badge').before(editBtn);
+    }
+    // If supervisor, also generate team review
+    const s2=S.staff.find(x=>x.id===S.curId);
+    if(s2?.role==='Showroom Supervisor'){
+      await generateTeamReview();
     }
     document.getElementById('aiActs').innerHTML=`<button class="ai-btn ai-btn-gold" onclick="generateReview()">↺ Regenerate</button><button class="ai-btn" onclick="previewPDF()">👁 Preview</button><button class="ai-btn" onclick="expPDF()">↓ Download PDF</button><button class="ai-btn" onclick="shareWA()">WhatsApp</button><button class="ai-btn" onclick="shareSMS()">SMS</button>`;
   }catch(e){
