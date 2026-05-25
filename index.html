@@ -972,6 +972,33 @@ function renderReviewPanel(){
     <!-- SECTION 5: LOST SALES -->
     <div class="rsec">
       <div class="rsec-head"><span class="rsec-title">Lost Sale Patterns</span><div class="rsec-line"></div></div>
+      ${(()=>{
+        // Build top 3 from lostReasonCounts (from sync) or from ticked lostPatterns
+        const counts=rev.lostReasonCounts||{};
+        const fromTicked=LOST.filter(l=>rev.lostPatterns&&rev.lostPatterns[l.label]).map(l=>({label:l.label,step:l.step,count:counts[l.label]||1}));
+        const fromCounts=Object.entries(counts).map(([label,count])=>({label,count,step:(LOST.find(l=>l.label===label)||{}).step}));
+        // Prefer counts from Supabase sync if available, else use ticked
+        const source=Object.keys(counts).length?fromCounts:fromTicked;
+        const top3=source.sort((a,b)=>b.count-a.count).slice(0,3);
+        if(!top3.length) return '';
+        const stepNames={greeting:'Greeting',dresses:'6–8 Dresses',eliminating:'Eliminating',urgency:'Urgency',theone:'The One'};
+        return `<div style="background:var(--danger-l);border:1px solid #e8c8c8;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--danger);font-weight:700;margin-bottom:8px;">Top Patterns This Month</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${top3.map((p,i)=>{
+              const stepName=p.step?stepNames[p.step]||p.step:'';
+              return `<div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:18px;height:18px;border-radius:50%;background:var(--danger);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
+                <div style="flex:1;">
+                  <span style="font-size:12px;color:var(--deep);font-weight:500;">${p.label}</span>
+                  ${stepName?`<span style="font-size:10px;color:var(--warm);margin-left:6px;">→ coach on ${stepName}</span>`:''}
+                </div>
+                ${p.count>1?`<span style="font-size:11px;color:var(--danger);font-weight:600;">${p.count}×</span>`:''}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      })()}
       <p style="font-size:11px;color:var(--warm);margin-bottom:14px;">Tick the patterns you noticed this month. Each links back to the sales process step to coach on. Add a note for any context.</p>
       <div id="lostList">${renderLost(rev)}</div>
     </div>
