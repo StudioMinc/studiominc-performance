@@ -505,6 +505,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const STORES=['Gold Coast','Sydney','Brisbane'];
 const DK='sm_perf_v4', SUK='sm_su', SKK='sm_sk';
+// Pre-fill Supabase credentials — always connected automatically
+// Always use latest credentials
+localStorage.setItem(SUK,'https://gaoivxzjrhrewdkisrre.supabase.co');
+localStorage.setItem(SKK,'sb_publishable_Hflr5WUxirKw_ilrZ24oVw_2N406tdy');
 
 const STEPS=[
   {key:'greeting',name:'Greeting / Energy',desc:'First impression, warmth, connection with the customer'},
@@ -1488,7 +1492,7 @@ async function debugShopifyMatch(){
   try{
     const res=await fetch(
       `${u}/rest/v1/appointments?select=name,staff_name,outcome&date=gte.2026-04-01&date=lte.2026-04-30&limit=2000`,
-      {headers:{'apikey':k,'Authorization':`Bearer ${k}`}}
+      {headers:{'apikey':k,'Authorization':`Bearer ${k}`,'x-client-info':'supabase-js/2.0.0'}}
     );
     const appts=await res.json();
     const withStaff=appts.filter(a=>a.staff_name&&a.staff_name!=='EMPTY');
@@ -1540,7 +1544,6 @@ function processShopifyCSV(file){
 
       // Deduplicate by order number — Shopify repeats rows for multi-item orders
       // "Name" column = order number (#23033), "Billing Name" = customer name
-      const colOrder=findCol('^name$'); // exact match for "Name" = order number
       const groupTotals={};
       rows.forEach(r=>{
         const oNum=r[colOrder]||'';
@@ -1602,7 +1605,7 @@ function processShopifyCSV(file){
       // Fetch P (purchased on day) appointments with dress data
       const res=await fetch(
         `${u}/rest/v1/appointments?select=id,name,staff_name,outcome,date,time,dresses,type&date=gte.${dateFrom}&date=lte.${dateTo}&outcome=eq.P&limit=2000`,
-        {headers:{'apikey':k,'Authorization':`Bearer ${k}`}}
+        {headers:{'apikey':k,'Authorization':`Bearer ${k}`,'x-client-info':'supabase-js/2.0.0'}}
       );
       const purchasedAppts=await res.json();
       console.log('Supabase purchased appts:', purchasedAppts.length);
@@ -1954,7 +1957,7 @@ function checkSupa(){
 }
 async function syncSupa(){
   const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK); if(!u||!k){openSupaModal();return;}
-  const headers={'apikey':k,'Authorization':`Bearer ${k}`};
+  const headers={'apikey':k,'Authorization':`Bearer ${k}`,'x-client-info':'supabase-js/2.0.0'};
 
   try{
     // ── 1. SYNC STAFF ──────────────────────────────────────────
