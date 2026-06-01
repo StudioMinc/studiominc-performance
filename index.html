@@ -1682,17 +1682,22 @@ async function syncSupa(){
       if(!sName||sName==='EMPTY')return;
       if(!byStaff[sName])byStaff[sName]={fA:0,fS:0,bA:0,bS:0,lostReasons:{}};
       const d=byStaff[sName];
-      const isFormal=!a.type||a.type.toLowerCase()==='formal';
-      const isSold=a.outcome==='P';
-      if(isFormal){d.fA++;if(isSold)d.fS++;}
-      else{d.bA++;if(isSold)d.bS++;}
+      const outcome=(a.outcome||'').trim();
+      if(!outcome||outcome==='EMPTY')return; // skip unlogged appointments
+      const isFormal=!a.type||a.type.toLowerCase()==='formal'||a.type.toLowerCase()==='minis';
+      const isBridal=a.type&&(a.type.toLowerCase()==='wedding'||a.type.toLowerCase()==='bridal');
+      const isSold=outcome==='P';
+      if(isBridal){d.bA++;if(isSold)d.bS++;}
+      else{d.fA++;if(isSold)d.fS++;} // formal/minis/unknown all count as formal
       if(!isSold&&a.reason&&a.reason!=='EMPTY'){
         d.lostReasons[a.reason]=(d.lostReasons[a.reason]||0)+1;
       }
     });
 
     S.staff.forEach(st=>{
-      const d=byStaff[st.name]; if(!d)return;
+      // Try full name match first, then first name match
+      const d=byStaff[st.name]||byStaff[st.name.split(' ')[0]];
+      if(!d)return;
       const rev=getMk(st.id,y,m);
       rev.fA=d.fA;rev.fS=d.fS;rev.bA=d.bA;rev.bS=d.bS;
       if(!rev.lostPatterns)rev.lostPatterns={};
