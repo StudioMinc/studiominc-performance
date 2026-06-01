@@ -171,14 +171,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .rb.r-nw{background:var(--danger-l);border-color:var(--danger);color:var(--danger);}
 
 /* FUND GRID */
-.fund-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
-.fi{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--linen);border-radius:6px;background:white;}
-.fi-lbl{font-size:11px;color:var(--deep);}
-.fi-togs{display:flex;gap:3px;}
-.ftog{padding:2px 7px;border-radius:20px;font-size:9px;border:1px solid var(--linen);background:var(--bone);cursor:pointer;color:var(--warm);font-family:'DM Sans',sans-serif;}
-.ftog.f-ex{background:var(--sage-l);border-color:var(--sage);color:var(--sage);}
-.ftog.f-nt{background:#EEF0F8;border-color:#7A82B0;color:#4A5280;}
-.ftog.f-nw{background:var(--danger-l);border-color:var(--danger);color:var(--danger);}
+.fund-grid{display:flex;flex-direction:column;gap:5px;}
+.fi{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--linen);border-radius:6px;background:white;gap:10px;}
+.fi-lbl{font-size:12px;color:var(--deep);flex:1;}
+.fi-togs{display:flex;gap:4px;flex-shrink:0;}
+.ftog{padding:3px 8px;border-radius:20px;font-size:9px;border:1px solid var(--linen);background:var(--bone);cursor:pointer;color:var(--warm);font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.ftog.f-ex{background:var(--sage-l);border-color:var(--sage);color:var(--sage);font-weight:600;}
+.ftog.f-nt{background:#EEF0F8;border-color:#7A82B0;color:#4A5280;font-weight:600;}
+.ftog.f-nw{background:var(--danger-l);border-color:var(--danger);color:var(--danger);font-weight:600;}
 
 /* MONTHLY AVERAGES */
 .avg-table{width:100%;border-collapse:collapse;}
@@ -301,8 +301,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
       <div class="prof-meta" id="profMeta"></div>
     </div>
     <div class="prof-tabs" id="profTabs" style="margin-left:auto;">
-      <button class="prof-tab active" onclick="switchTab('monthly')" id="tab-monthly">Monthly</button>
-      <button class="prof-tab" onclick="switchTab('weekly')" id="tab-weekly">Weekly</button>
+      <button class="prof-tab active" onclick="switchTab('weekly')" id="tab-weekly">Weekly</button>
+      <button class="prof-tab" onclick="switchTab('monthly')" id="tab-monthly">Review</button>
     </div>
     <button class="btn btn-sm" onclick="openEditStaff()" style="margin-left:12px;">Edit</button>
   </div>
@@ -726,16 +726,24 @@ function renderCard(s){
 // ═══════════════════════════════════════════════
 function openProfile(id){
   S.curId=id;
-  S.curTab='monthly';
   S.curWeek=getCurrentWeek();
+  const s=S.staff.find(x=>x.id===id);
+  // Area Manager goes straight to Review tab; everyone else starts on Weekly
+  S.curTab=s?.role==='Area Manager'?'monthly':'weekly';
   document.getElementById('homePage').classList.remove('on');
   document.getElementById('profilePage').classList.add('on');
   renderProfile();
 }
 
 function getCurrentWeek(){
-  const today=new Date();
-  const day=today.getDate();
+  // Find the first incomplete week, fallback to calendar-based week
+  if(S.curId){
+    for(let wk=1;wk<=4;wk++){
+      if(!weekDone(S.curId,S.curYear,S.curMonth,wk))return wk;
+    }
+    return 4; // all done, show week 4
+  }
+  const day=new Date().getDate();
   if(day<=7)return 1;
   if(day<=14)return 2;
   if(day<=21)return 3;
@@ -751,9 +759,11 @@ function renderProfile(){
   document.getElementById('profNm').textContent=s.name;
   document.getElementById('profMeta').textContent=`${s.role||'Casual Stylist'} · ${s.store}`;
 
-  // Tabs — Area Manager has no weekly tab for their own review (they review others)
+  // Tabs — Area Manager has no weekly tab
   const isAM=s.role==='Area Manager';
   document.getElementById('profTabs').style.display=isAM?'none':'';
+  document.getElementById('tab-weekly').classList.toggle('active',S.curTab==='weekly');
+  document.getElementById('tab-monthly').classList.toggle('active',S.curTab==='monthly');
 
   renderProfHistory();
   if(S.curTab==='weekly'&&!isAM){
@@ -765,8 +775,8 @@ function renderProfile(){
 
 function switchTab(tab){
   S.curTab=tab;
-  document.getElementById('tab-monthly').classList.toggle('active',tab==='monthly');
   document.getElementById('tab-weekly').classList.toggle('active',tab==='weekly');
+  document.getElementById('tab-monthly').classList.toggle('active',tab==='monthly');
   if(tab==='weekly')renderWeeklyTab();
   else renderMonthlyTab();
 }
@@ -876,9 +886,9 @@ function renderWeeklyTab(){
     return `<div class="fi">
       <span class="fi-lbl">${f}</span>
       <div class="fi-togs">
-        <button class="ftog ${val==='ex'?'f-ex':''}" onclick="setRating('fund','${key}','ex')">E</button>
-        <button class="ftog ${val==='nt'?'f-nt':''}" onclick="setRating('fund','${key}','nt')">N</button>
-        <button class="ftog ${val==='nw'?'f-nw':''}" onclick="setRating('fund','${key}','nw')">NW</button>
+        <button class="ftog ${val==='ex'?'f-ex':''}" onclick="setRating('fund','${key}','ex')" title="Excellent">✓ Excellent</button>
+        <button class="ftog ${val==='nt'?'f-nt':''}" onclick="setRating('fund','${key}','nt')" title="Neutral">— Neutral</button>
+        <button class="ftog ${val==='nw'?'f-nw':''}" onclick="setRating('fund','${key}','nw')" title="Needs Work">✗ Needs Work</button>
       </div>
     </div>`;
   }).join('');
@@ -901,7 +911,7 @@ function renderWeeklyTab(){
 
     <div class="rsec">
       <div class="rsec-head"><span class="rsec-title">Fundamentals</span><div class="rsec-line"></div>
-        <span style="font-size:9px;color:var(--taupe)">E = Excellent · N = Neutral · NW = Needs Work</span>
+        <span style="font-size:9px;color:var(--taupe)">✓ Excellent &nbsp;— Neutral &nbsp;✗ Needs Work</span>
       </div>
       <div class="fund-grid">${fundHtml}</div>
     </div>
