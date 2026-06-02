@@ -603,12 +603,14 @@ function weekDone(id,y,m,wk){
 // ═══════════════════════════════════════════════
 function initNav(){
   const sel=document.getElementById('navMonth');
+  sel.innerHTML='';
   MONTHS.forEach((m,i)=>{
     const o=document.createElement('option');
     o.value=i+1; o.textContent=m;
     if(i+1===S.curMonth)o.selected=true;
     sel.appendChild(o);
   });
+  sel.value=S.curMonth;
   document.getElementById('navYear').value=S.curYear;
 }
 function onMonthChange(){
@@ -1684,14 +1686,21 @@ async function syncSupa(){
       const d=byStaff[sName];
       const outcome=(a.outcome||'').trim();
       if(!outcome||outcome==='EMPTY')return; // skip unlogged appointments
-      const isFormal=!a.type||a.type.toLowerCase()==='formal'||a.type.toLowerCase()==='minis';
       const isBridal=a.type&&(a.type.toLowerCase()==='wedding'||a.type.toLowerCase()==='bridal');
-      const isSold=outcome==='P';
+      // P = purchased on day, CX = converted later via phone — both count as sales
+      const isSold=outcome==='P'||outcome==='CX';
       if(isBridal){d.bA++;if(isSold)d.bS++;}
-      else{d.fA++;if(isSold)d.fS++;} // formal/minis/unknown all count as formal
+      else{d.fA++;if(isSold)d.fS++;}
       if(!isSold&&a.reason&&a.reason!=='EMPTY'){
         d.lostReasons[a.reason]=(d.lostReasons[a.reason]||0)+1;
       }
+    });
+
+    console.log(`${y}-${mStr}: fetched ${appts.length} appointments`);
+    console.log('byStaff keys:', Object.keys(byStaff));
+    Object.entries(byStaff).forEach(([name,d])=>{
+      const tot=d.fA+d.bA, sold=d.fS+d.bS;
+      console.log(`  ${name}: ${tot} appts, ${sold} sold, CR=${tot>0?Math.round(sold/tot*100)+'%':'—'}`);
     });
 
     S.staff.forEach(st=>{
