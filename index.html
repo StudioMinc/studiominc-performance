@@ -643,23 +643,32 @@ function renderHome(){
     const totalS=amRevs.reduce((t,r)=>(t+(parseFloat(r.fS)||0)+(parseFloat(r.bS)||0)),0);
     const networkCR=totalA>0?Math.round(totalS/totalA*100):null;
     const ini=am.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
-    html+=`<div class="am-banner" onclick="openProfile('${am.id}')" style="cursor:pointer;">
+    const teamLeaders=S.staff.filter(s=>s.role==='Team Leader').length;
+    html+=`<div class="am-banner" onclick="openProfile('${am.id}')" style="cursor:pointer;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),#E8C86A,var(--gold));"></div>
       <div class="am-av">${am.photo?`<img src="${am.photo}">`:`${ini}`}</div>
       <div>
         <div class="am-name">${am.name}</div>
-        <div class="am-role">Area Manager</div>
+        <div class="am-role">⭑ Area Manager · All Stores</div>
       </div>
       <div class="am-stats">
         <div class="am-stat"><div class="am-sv" style="color:${crColor(networkCR)}">${networkCR!==null?networkCR+'%':'—'}</div><div class="am-sl">Network CR</div></div>
         <div class="am-stat"><div class="am-sv">${totalA}</div><div class="am-sl">Total Appts</div></div>
-        <div class="am-stat"><div class="am-sv">${S.staff.filter(s=>s.role!=='Area Manager').length}</div><div class="am-sl">Stylists</div></div>
+        <div class="am-stat"><div class="am-sv">${S.staff.filter(s=>s.role==='Casual Stylist').length}</div><div class="am-sl">Stylists</div></div>
+        <div class="am-stat"><div class="am-sv">${teamLeaders}</div><div class="am-sl">Team Leaders</div></div>
       </div>
     </div>`;
   }
 
   // Showrooms
   STORES.forEach(store=>{
-    const storeStaff=S.staff.filter(s=>s.store===store&&s.role!=='Area Manager');
+    const storeStaff=S.staff
+      .filter(s=>s.store===store&&s.role!=='Area Manager')
+      .sort((a,b)=>{
+        if(a.role==='Team Leader'&&b.role!=='Team Leader')return -1;
+        if(b.role==='Team Leader'&&a.role!=='Team Leader')return 1;
+        return 0;
+      });
     if(!storeStaff.length&&!S.staff.some(s=>s.store===store))return;
 
     // Store CR
@@ -710,8 +719,23 @@ function renderCard(s){
     <div style="margin-top:6px;"><div class="sc-sv">${fC}%</div><div class="sc-sl">Formal</div></div>`:
     bld===null?`<div style="font-size:10px;color:var(--taupe);margin-top:5px;">No data yet</div>`:'';
 
+  if(isLeader){
+    return `<div class="sc" onclick="openProfile('${s.id}')" style="border:2px solid var(--gold);position:relative;">
+      <div style="position:absolute;top:8px;right:8px;z-index:2;background:var(--gold);color:var(--ink);font-size:8px;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:20px;text-transform:uppercase;">Team Leader</div>
+      <div class="sc-photo" style="background:var(--gold-l);">
+        ${s.photo?`<img src="${s.photo}">`:`<div class="sc-ini" style="color:var(--gold);">${ini}</div>`}
+        ${bld!==null?`<div class="cr-pill ${crPillClass(bld)}">${bld}%</div>`:''}
+      </div>
+      <div class="sc-info" style="background:white;">
+        <div class="sc-name" style="font-weight:600;">${s.name}</div>
+        <div class="sc-role-lbl" style="color:var(--gold);">Team Leader</div>
+        ${splitEl}
+      </div>
+    </div>`;
+  }
+
   return `<div class="sc" onclick="openProfile('${s.id}')">
-    <div class="sc-photo" ${isLeader?'style="border-top:3px solid var(--gold);"':''}>
+    <div class="sc-photo">
       ${s.photo?`<img src="${s.photo}">`:`<div class="sc-ini">${ini}</div>`}
       ${bld!==null?`<div class="cr-pill ${crPillClass(bld)}">${bld}%</div>`:''}
     </div>
