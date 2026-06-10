@@ -547,6 +547,7 @@ function saveHonourableMention(val){
   const wk=getWeek(S.curId,S.curYear,S.curMonth,S.curWeek);
   wk.honourableMention=val; sv();
 }
+function setProcNote(key,val){
   const wk=getWeek(S.curId,S.curYear,S.curMonth,S.curWeek);
   wk.procNotes[key]=val; sv();
 }
