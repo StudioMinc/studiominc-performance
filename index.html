@@ -571,25 +571,25 @@ function blended(rev){
 }
 function crColor(v){
   if(v===null)return'var(--taupe)';
-  if(v>=65)return'var(--sage)';
+  if(v>=60)return'var(--sage)';
   if(v>=50)return'var(--amber)';
   return'var(--danger)';
 }
 function crBgColor(v){
   if(v===null)return'var(--bone)';
-  if(v>=65)return'var(--sage-l)';
+  if(v>=60)return'var(--sage-l)';
   if(v>=50)return'var(--amber-l)';
   return'var(--danger-l)';
 }
 function crPillClass(v){
   if(v===null)return'p-none';
-  if(v>=65)return'p-ex';
+  if(v>=60)return'p-ex';
   if(v>=50)return'p-gd';
   return'p-nw';
 }
 function badg(v){
   if(v===null)return'';
-  if(v>=65)return`<span class="bdg b-ex">Excellent</span>`;
+  if(v>=60)return`<span class="bdg b-ex">Excellent</span>`;
   if(v>=50)return`<span class="bdg b-gd">On Track</span>`;
   return`<span class="bdg b-nw">Needs Attention</span>`;
 }
@@ -1396,8 +1396,8 @@ CONVERSION RATES:
 - Formal: ${fC!==null?fC+'%':'not recorded'} (${rev.fA||0} appts, ${rev.fS||0} sales)
 
 PERFORMANCE STANDARDS — be honest:
-- 65%+ = Excellent. Acknowledge genuinely.
-- 50–64% = Meets standard. Encourage to push further.
+- 60%+ = Excellent. Acknowledge genuinely.
+- 50–59% = Meets standard. Encourage to push further.
 - Below 50% = Below standard. Be kind but clear — do NOT describe as good/solid/decent. Frame as an opportunity.
 
 SALES PROCESS AVERAGES (from weekly assessments):
@@ -1474,7 +1474,7 @@ async function generateTeamReview(){
 
   const prompt=`You are writing a private team performance summary for ${s.name}, Team Leader at Studio Minc ${s.store}, for ${MONTHS[S.curMonth-1]} ${S.curYear}.
 
-Store blended CR: ${stCR!==null?stCR+'%':'unknown'} (standard: 50%+ meets expectations, 65%+ excellent, below 50% needs attention)
+Store blended CR: ${stCR!==null?stCR+'%':'unknown'} (standard: 50%+ meets expectations, 60%+ excellent, below 50% needs attention)
 Team:
 ${teamSummary}
 
