@@ -1454,37 +1454,68 @@ async function expPDF(){
     doc.text(st.v,x,y+8);
     if(st.s){doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(140,126,106);doc.text(st.s,x,y+13);}
   });
-  y+=22;
+  y+=24;
 
-  // Monthly averages
-  if(y>pageH-40){doc.addPage();y=20;}
+  // Sales Process
+  if(y>pageH-50){doc.addPage();y=20;}
   y=secLabel('Sales Process — Monthly Averages',y);
+  // Tagline
+  doc.setFontSize(8); doc.setTextColor(100,90,78); doc.setFont('helvetica','italic');
+  const tagline='"Our sales process has been refined over a decade of industry experience. Every step — from the moment a customer walks in, to finding The One — is intentional. Miss a step, and you\'ll feel it in the result. This isn\'t a script; it\'s the difference between a customer who leaves with a dress she loves and one who leaves uncertain."';
+  const tagLines=doc.splitTextToSize(tagline,pageW-30);
+  tagLines.forEach(l=>{doc.text(l,15,y);y+=4.5;});
+  y+=5;
   const avgMap={'ex':'Excellent','gd':'Good','nw':'Needs Work'};
   STEPS.forEach(step=>{
     if(y>pageH-10){doc.addPage();y=20;}
     const avg=avgRating(s.id,S.curYear,S.curMonth,'proc',step.key);
-    doc.setFontSize(8); doc.setTextColor(50,42,35); doc.setFont('helvetica','normal');
+    doc.setFontSize(9); doc.setTextColor(50,42,35); doc.setFont('helvetica','normal');
     doc.text(step.name,15,y);
     if(avg){
       const col=avg==='ex'?[92,112,85]:avg==='gd'?[138,112,0]:[196,80,80];
       doc.setTextColor(...col); doc.setFont('helvetica','bold');
       doc.text(avgMap[avg],pageW-15,y,{align:'right'});
+    } else {
+      doc.setTextColor(180,174,166); doc.setFont('helvetica','normal');
+      doc.text('No data',pageW-15,y,{align:'right'});
     }
-    y+=5;
+    y+=6;
   });
-  y+=4;
+  y+=6;
 
-  // Lost sale patterns
-  const checkedP=LOST.filter(r=>rev.lostPatterns&&rev.lostPatterns[r.label]);
-  if(checkedP.length){
+  // From Your Manager
+  if(y>pageH-50){doc.addPage();y=20;}
+  doc.setFillColor(28,23,16); doc.rect(15,y,pageW-30,7,'F');
+  doc.setFontSize(7.5); doc.setTextColor(250,248,244); doc.setFont('helvetica','normal');
+  doc.text('FROM YOUR MANAGER',18,y+5); y+=13;
+  doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(40,33,26);
+  doc.splitTextToSize(rev.ai||'',pageW-30).forEach(line=>{
+    if(y>pageH-16){doc.addPage();y=20;}
+    doc.text(line,15,y); y+=5.5;
+  });
+  y+=8;
+
+  // Top 3 Lost Sale Patterns only
+  const lostCounts=rev.lostReasonCounts||{};
+  const tickedLost=LOST.filter(r=>rev.lostPatterns&&rev.lostPatterns[r.label]);
+  const lostSource=Object.keys(lostCounts).length
+    ?Object.entries(lostCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([label])=>LOST.find(l=>l.label===label)).filter(Boolean)
+    :tickedLost.slice(0,3);
+
+  if(lostSource.length){
     if(y>pageH-40){doc.addPage();y=20;}
-    y=secLabel('Lost Sale Patterns & Coaching Actions',y);
-    checkedP.forEach(r=>{
+    y=secLabel('Sales Training — Top 3 Focus Areas',y);
+    doc.setFontSize(7.5); doc.setTextColor(140,126,106); doc.setFont('helvetica','italic');
+    doc.text('Focus on these patterns to lift your conversion rate.',15,y); y+=7;
+
+    lostSource.forEach((r,idx)=>{
+      if(!r)return;
       if(y>pageH-30){doc.addPage();y=20;}
       const sn=r.step?STEPS.find(st=>st.key===r.step)?.name:'';
-      doc.setFillColor(245,224,224); doc.rect(15,y-3,pageW-30,6,'F');
+      // Pattern header
+      doc.setFillColor(245,224,224); doc.rect(15,y-3,pageW-30,7,'F');
       doc.setFontSize(8); doc.setTextColor(196,80,80); doc.setFont('helvetica','bold');
-      doc.text(`${r.label}${sn?' → '+sn:''}`,17,y+1); y+=7;
+      doc.text(`${idx+1}. ${r.label}${sn?' → '+sn:''}`,17,y+1); y+=8;
       if(r.tip){
         doc.setFontSize(7); doc.setTextColor(140,126,106); doc.setFont('helvetica','italic');
         doc.text(`Principle: ${r.tip}`,17,y); y+=5;
@@ -1495,32 +1526,19 @@ async function expPDF(){
           const isQ=a.trim().startsWith('<em>');
           const clean=a.replace(/<em>/g,'').replace(/<\/em>/g,'').replace(/<[^>]+>/g,'');
           if(isQ){
-            doc.setFontSize(7.5); doc.setTextColor(61,51,41); doc.setFont('helvetica','italic');
-            const lines=doc.splitTextToSize(`  "${clean}"`,pageW-40);
-            lines.forEach(l=>{if(y>pageH-8){doc.addPage();y=20;}doc.text(l,22,y);y+=4.5;});
+            doc.setFontSize(8); doc.setTextColor(50,42,35); doc.setFont('helvetica','italic');
+            const lines=doc.splitTextToSize(`"${clean}"`,pageW-44);
+            lines.forEach(l=>{if(y>pageH-8){doc.addPage();y=20;}doc.text(l,24,y);y+=5;});
           } else {
-            doc.setFontSize(7); doc.setTextColor(80,70,60); doc.setFont('helvetica','normal');
+            doc.setFontSize(7.5); doc.setTextColor(80,70,60); doc.setFont('helvetica','normal');
             const lines=doc.splitTextToSize('• '+clean,pageW-36);
-            lines.forEach(l=>{if(y>pageH-8){doc.addPage();y=20;}doc.text(l,19,y);y+=4;});
+            lines.forEach(l=>{if(y>pageH-8){doc.addPage();y=20;}doc.text(l,19,y);y+=4.5;});
           }
         });
       }
-      y+=4;
+      y+=5;
     });
-    y+=3;
   }
-
-  // Written review
-  if(y>pageH-50){doc.addPage();y=20;}
-  doc.setDrawColor(220,214,205); doc.setLineWidth(0.3); doc.line(15,y,pageW-15,y); y+=2;
-  doc.setFillColor(28,23,16); doc.rect(15,y,pageW-30,7,'F');
-  doc.setFontSize(7.5); doc.setTextColor(250,248,244); doc.setFont('helvetica','normal');
-  doc.text('FROM YOUR MANAGER',18,y+5); y+=13;
-  doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(40,33,26);
-  doc.splitTextToSize(rev.ai||'',pageW-30).forEach(line=>{
-    if(y>pageH-16){doc.addPage();y=20;}
-    doc.text(line,15,y); y+=5.5;
-  });
 
   // Team section for Team Leaders
   if((s.role==='Team Leader'||s.role==='Area Manager')&&rev.aiTeam){
