@@ -663,16 +663,18 @@ function renderHome(){
   // Showrooms
   STORES.forEach(store=>{
     const storeStaff=S.staff
-      .filter(s=>s.store===store&&s.role!=='Area Manager')
+      .filter(s=>s.store===store&&(s.role!=='Area Manager'||s.store===store))
       .sort((a,b)=>{
-        if(a.role==='Team Leader'&&b.role!=='Team Leader')return -1;
-        if(b.role==='Team Leader'&&a.role!=='Team Leader')return 1;
+        if(a.role==='Area Manager'&&b.role!=='Area Manager')return -1;
+        if(a.role==='Team Leader'&&b.role==='Casual Stylist')return -1;
+        if(b.role==='Team Leader'&&a.role==='Casual Stylist')return 1;
         return 0;
       });
     if(!storeStaff.length&&!S.staff.some(s=>s.store===store))return;
 
     // Store CR
-    const storeRevs=storeStaff.map(s=>getMk(s.id,S.curYear,S.curMonth));
+    const amInStore=S.staff.filter(s=>s.store===store&&s.role==='Area Manager');
+    const storeRevs=[...storeStaff].map(s=>getMk(s.id,S.curYear,S.curMonth));
     const stA=storeRevs.reduce((t,r)=>(t+(parseFloat(r.fA)||0)+(parseFloat(r.bA)||0)),0);
     const stS=storeRevs.reduce((t,r)=>(t+(parseFloat(r.fS)||0)+(parseFloat(r.bS)||0)),0);
     const stCR=stA>0?Math.round(stS/stA*100):null;
@@ -729,6 +731,21 @@ function renderCard(s){
       <div class="sc-info" style="background:white;">
         <div class="sc-name" style="font-weight:600;">${s.name}</div>
         <div class="sc-role-lbl" style="color:var(--gold);">Team Leader</div>
+        ${splitEl}
+      </div>
+    </div>`;
+  }
+
+  if(s.role==='Area Manager'){
+    return `<div class="sc" onclick="openProfile('${s.id}')" style="border:2px solid var(--ink);position:relative;">
+      <div style="position:absolute;top:8px;right:8px;z-index:2;background:var(--ink);color:var(--cream);font-size:8px;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:20px;text-transform:uppercase;">Area Mgr</div>
+      <div class="sc-photo" style="background:#2a2520;">
+        ${s.photo?`<img src="${s.photo}">`:`<div class="sc-ini" style="color:var(--cream);">${ini}</div>`}
+        ${bld!==null?`<div class="cr-pill ${crPillClass(bld)}">${bld}%</div>`:''}
+      </div>
+      <div class="sc-info" style="background:white;">
+        <div class="sc-name" style="font-weight:600;">${s.name}</div>
+        <div class="sc-role-lbl" style="color:var(--ink);">Area Manager</div>
         ${splitEl}
       </div>
     </div>`;
