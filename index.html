@@ -1711,8 +1711,10 @@ async function syncSupa(){
       const outcome=(a.outcome||'').trim();
       if(!outcome||outcome==='EMPTY')return; // skip unlogged appointments
       const isBridal=a.type&&(a.type.toLowerCase()==='wedding'||a.type.toLowerCase()==='bridal');
-      // P = purchased on day, CX = converted later via phone — both count as sales
-      const isSold=outcome==='P'||outcome==='CX';
+      // Match showroom app exactly:
+      // Served = ALL appointments with any outcome (P, C, CX, NS all count)
+      // Sold = outcome P or C only
+      const isSold=outcome==='P'||outcome==='C';
       if(isBridal){d.bA++;if(isSold)d.bS++;}
       else{d.fA++;if(isSold)d.fS++;}
       if(!isSold&&a.reason&&a.reason!=='EMPTY'){
