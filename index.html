@@ -543,7 +543,10 @@ function getWeek(id,y,m,wk){
   if(!rev.weeks[wk].fundNotes)rev.weeks[wk].fundNotes={};
   return rev.weeks[wk];
 }
-function setProcNote(key,val){
+function saveHonourableMention(val){
+  const wk=getWeek(S.curId,S.curYear,S.curMonth,S.curWeek);
+  wk.honourableMention=val; sv();
+}
   const wk=getWeek(S.curId,S.curYear,S.curMonth,S.curWeek);
   wk.procNotes[key]=val; sv();
 }
@@ -984,6 +987,15 @@ function renderWeeklyTab(){
       <div class="fund-grid">${fundHtml}</div>
     </div>
 
+    <div class="rsec" style="margin-top:16px;">
+      <div class="rsec-head"><span class="rsec-title">Honourable Mention</span><div class="rsec-line"></div>
+        <span style="font-size:10px;color:var(--taupe);">Optional — highlight something positive this week</span>
+      </div>
+      <div class="rcard">
+        <textarea id="honourableMention" style="width:100%;border:1px solid var(--linen);border-radius:6px;padding:8px 10px;font-size:12px;font-family:'DM Sans',sans-serif;background:var(--cream);resize:none;min-height:52px;" placeholder='e.g. "Rhi closed a really tough appointment this week — great use of urgency and stock conversation"' onchange="saveHonourableMention(this.value)">${wkData.honourableMention||''}</textarea>
+      </div>
+    </div>
+
     <div class="week-save-bar">
       <div class="week-save-info">Week ${S.curWeek} of 4 · ${MONTHS[S.curMonth-1]} ${S.curYear}</div>
       <button class="btn btn-ink" onclick="saveWeek()">Save Week ${S.curWeek}</button>
@@ -1051,7 +1063,21 @@ function renderMonthlyTab(){
               }).join('');
               const avg=avgRating(s.id,S.curYear,S.curMonth,'proc',step.key);
               const avgHtml=avg?`<span class="avg-pill ${avg==='ex'?'b-ex':avg==='gd'?'b-gd':'b-nw'}">${avg==='ex'?'Excellent':avg==='gd'?'Good':'Needs Work'}</span>`:`<span style="color:var(--taupe);font-size:10px;">No data</span>`;
-              return`<tr><td><strong>${step.name}</strong></td>${wkDots}<td>${avgHtml}</td></tr>`;
+              // Collect notes from all weeks
+              const notes=[1,2,3,4].map(wk=>{
+                const n=rev.weeks[wk]?.procNotes?.[step.key];
+                return n?{wk,note:n}:null;
+              }).filter(Boolean);
+              const notesHtml=notes.length?`
+                <tr><td colspan="6" style="padding:0 8px 8px;background:var(--bone);">
+                  <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--warm);margin-bottom:4px;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+                    📝 ${notes.length} note${notes.length>1?'s':''} — click to view
+                  </div>
+                  <div style="display:none;">
+                    ${notes.map(n=>`<div style="font-size:11px;color:var(--deep);padding:3px 0;border-bottom:1px solid var(--linen);"><span style="font-size:9px;font-weight:600;color:var(--warm);margin-right:6px;">Wk ${n.wk}</span>${n.note}</div>`).join('')}
+                  </div>
+                </td></tr>`:'';
+              return`<tr><td><strong>${step.name}</strong></td>${wkDots}<td>${avgHtml}</td></tr>${notesHtml}`;
             }).join('')}
           </tbody>
         </table>
@@ -1065,7 +1091,25 @@ function renderMonthlyTab(){
           const avg=avgRating(s.id,S.curYear,S.curMonth,'fund',f.key);
           const cls=avg==='ex'?'f-ex':avg==='gd'?'f-nt':avg==='nw'?'f-nw':'';
           const lbl=avg==='ex'?'Excellent':avg==='gd'?'Good':avg==='nw'?'Needs Work':'No data';
-          return`<div class="fi"><span class="fi-lbl">${f.label}</span><span class="ftog ${cls}" style="cursor:default;">${lbl}</span></div>`;
+          // Collect notes from all weeks
+          const notes=[1,2,3,4].map(wk=>{
+            const n=rev.weeks[wk]?.fundNotes?.[f.key];
+            return n?{wk,note:n}:null;
+          }).filter(Boolean);
+          return`<div class="fi" style="flex-direction:column;align-items:flex-start;">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+              <span class="fi-lbl">${f.label}</span>
+              <span class="ftog ${cls}" style="cursor:default;">${lbl}</span>
+            </div>
+            ${notes.length?`<div style="width:100%;margin-top:4px;">
+              <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--warm);cursor:pointer;margin-bottom:2px;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+                📝 ${notes.length} note${notes.length>1?'s':''} — click to view
+              </div>
+              <div style="display:none;">
+                ${notes.map(n=>`<div style="font-size:11px;color:var(--deep);padding:3px 0;border-bottom:1px solid var(--linen);"><span style="font-size:9px;font-weight:600;color:var(--warm);margin-right:6px;">Wk ${n.wk}</span>${n.note}</div>`).join('')}
+              </div>
+            </div>`:''}
+          </div>`;
         }).join('')}
       </div>
     </div>`;
@@ -1103,8 +1147,22 @@ function renderMonthlyTab(){
       </div>
     </div>`;
 
-  // Positives & Growth
-  const pgHtml=renderPG(rev);
+  // Honourable Mentions from weekly assessments
+  const pgHtml=`<div class="rsec">
+    <div class="rsec-head"><span class="rsec-title">Honourable Mentions</span><div class="rsec-line"></div></div>
+    <div class="rcard">
+      ${[1,2,3,4].map(wk=>{
+        const mention=rev.weeks[wk]?.honourableMention||'';
+        return`<div style="display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--bone);">
+          <div style="font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);flex-shrink:0;width:30px;">Wk ${wk}</div>
+          ${mention
+            ?`<div style="font-size:12px;color:var(--deep);font-style:italic;">"${mention}"</div>`
+            :`<div style="font-size:11px;color:var(--taupe);">No mention added</div>`
+          }
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
 
   // AI Review section — only Area Manager can generate & send
   const aiHtml=`
@@ -1303,7 +1361,11 @@ async function generateReview(){
 
   const procAvgs=STEPS.map(st=>{
     const avg=avgRating(s.id,S.curYear,S.curMonth,'proc',st.key);
-    return`${st.name}: ${avg?avg==='ex'?'Excellent':avg==='gd'?'Good':'Needs Work':'No data'}`;
+    const notes=[1,2,3,4].map(wk=>{
+      const n=rev.weeks[wk]?.procNotes?.[st.key];
+      return n?`Wk${wk}: ${n}`:null;
+    }).filter(Boolean);
+    return`${st.name}: ${avg?avg==='ex'?'Excellent':avg==='gd'?'Good':'Needs Work':'No data'}${notes.length?' (Notes: '+notes.join(' / ')+')':''}`;
   }).join('\n');
 
   const fundAvgs=FUNDS.map(f=>{
@@ -1317,8 +1379,11 @@ async function generateReview(){
     ?checkedLost.map(r=>{const sn=r.step?STEPS.find(s=>s.key===r.step)?.name:'';return`${r.label}${sn?' → '+sn:''}`;}).join('\n')
     :'None identified';
 
-  const prosText=(rev.pros||[]).map(p=>p.txt).join(', ')||'None noted';
-  const consText=(rev.cons||[]).map(p=>p.txt).join(', ')||'None noted';
+  const mentions=[1,2,3,4].map(wk=>{
+    const m=rev.weeks[wk]?.honourableMention;
+    return m?`Wk${wk}: ${m}`:null;
+  }).filter(Boolean);
+  const mentionsText=mentions.length?mentions.join(' / '):'None recorded';
 
   const prompt=`You are writing a monthly performance review for ${s.name}, a ${s.role||'Casual Stylist'} at Studio Minc — a premium prom, formalwear and bridal boutique in ${s.store}, Australia.
 
@@ -1339,8 +1404,7 @@ ${procAvgs}
 FUNDAMENTALS HIGHLIGHTS:
 ${fundAvgs||'No data recorded'}
 
-POSITIVES: ${prosText}
-GROWTH AREAS: ${consText}
+HONOURABLE MENTIONS THIS MONTH: ${mentionsText}
 LOST SALE PATTERNS: ${lostL}
 ${rev.lostNote?`Additional context: ${rev.lostNote}`:''}
 
@@ -1504,8 +1568,42 @@ async function expPDF(){
       doc.text('No data',pageW-15,y,{align:'right'});
     }
     y+=6;
+    // Print weekly notes for this step
+    const stepNotes=[1,2,3,4].map(wk=>{
+      const n=rev.weeks[wk]?.procNotes?.[step.key];
+      return n?{wk,note:n}:null;
+    }).filter(Boolean);
+    stepNotes.forEach(({wk,note})=>{
+      if(y>pageH-8){doc.addPage();y=20;}
+      doc.setFontSize(7); doc.setTextColor(140,126,106); doc.setFont('helvetica','italic');
+      const lines=doc.splitTextToSize(`Wk ${wk}: ${note}`,pageW-36);
+      lines.forEach(l=>{if(y>pageH-6){doc.addPage();y=20;}doc.text(l,20,y);y+=4;});
+    });
+    if(stepNotes.length)y+=2;
   });
   y+=6;
+
+  // Honourable Mentions
+  const mentions=[1,2,3,4].map(wk=>{
+    const m=rev.weeks[wk]?.honourableMention;
+    return m?{wk,m}:null;
+  }).filter(Boolean);
+  if(mentions.length){
+    if(y>pageH-30){doc.addPage();y=20;}
+    y=secLabel('Honourable Mentions',y);
+    mentions.forEach(({wk,m})=>{
+      if(y>pageH-10){doc.addPage();y=20;}
+      doc.setFontSize(7.5); doc.setTextColor(140,126,106); doc.setFont('helvetica','bold');
+      doc.text(`Week ${wk}`,15,y);
+      doc.setFont('helvetica','italic'); doc.setTextColor(50,42,35);
+      const lines=doc.splitTextToSize(`"${m}"`,pageW-45);
+      lines.forEach((l,i)=>{
+        if(y>pageH-8){doc.addPage();y=20;}
+        doc.text(l,i===0?30:20,y); y+=5;
+      });
+    });
+    y+=4;
+  }
 
   // From Your Manager
   if(y>pageH-50){doc.addPage();y=20;}
