@@ -496,33 +496,15 @@ function sv(){
     Object.keys(rev).forEach(key=>{if(key!=='lostReasonCounts')clean[key]=rev[key];});
     reviewsToSave[k]=clean;
   });
-  const staffToSave=S.staff.map(s=>{
-    const sc=Object.assign({},s);
-    if(sc.photo&&sc.photo.length>100){
-      try{localStorage.setItem('sm_photo_'+sc.id,sc.photo);}catch(e){}
-      sc.photo='__has_photo__';
-    }
-    return sc;
-  });
   try{
-    localStorage.setItem(DK,JSON.stringify({staff:staffToSave,reviews:reviewsToSave}));
-  }catch(e){
-    try{
-      localStorage.setItem(DK,JSON.stringify({staff:staffToSave.map(s=>({...s,photo:null})),reviews:reviewsToSave}));
-    }catch(e2){console.warn('localStorage full');}
-  }
+    localStorage.setItem(DK,JSON.stringify({staff:S.staff,reviews:reviewsToSave}));
+  }catch(e){console.warn('localStorage full');}
 }
 
 function ld(){
   try{
     const d=JSON.parse(localStorage.getItem(DK)||'{}');
     S.staff=d.staff||[];
-    S.staff.forEach(s=>{
-      if(s.photo==='__has_photo__'){
-        const p=localStorage.getItem('sm_photo_'+s.id);
-        s.photo=p||null;
-      }
-    });
     S.reviews=d.reviews||{};
   }catch(e){}
 }
@@ -1760,6 +1742,21 @@ function shareSMS(){
 // STAFF MODAL
 // ═══════════════════════════════════════════════
 let _photoData=null;
+let _photoFile=null;
+
+async function uploadPhotoToSupabase(staffId,file){
+  const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK);
+  if(!u||!k||!file)return null;
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const path=`${staffId}.${ext}`;
+  const res=await fetch(`${u}/storage/v1/object/staff-photos/${path}`,{
+    method:'POST',
+    headers:{'apikey':k,'Authorization':`Bearer ${k}`,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},
+    body:file,
+  });
+  if(!res.ok){console.error('Photo upload failed',await res.text());return null;}
+  return`${u}/storage/v1/object/public/staff-photos/${path}`;
+}
 function openAddStaff(store){
   document.getElementById('staffModalTitle').textContent='Add Staff Member';
   document.getElementById('sfName').value='';
@@ -1771,7 +1768,7 @@ function openAddStaff(store){
   document.getElementById('photoPlus').style.display='';
   document.getElementById('photoTxt').textContent='Upload photo';
   document.getElementById('sfDeleteBtn').style.display='none';
-  _photoData=null;
+  _photoData=null; _photoFile=null;
   document.getElementById('staffModal').style.display='flex';
 }
 function openEditStaff(){
@@ -1785,11 +1782,12 @@ function openEditStaff(){
   if(s.photo){document.getElementById('photoPreview').src=s.photo;document.getElementById('photoPreview').style.display='';document.getElementById('photoPlus').style.display='none';document.getElementById('photoTxt').textContent='Change photo';}
   else{document.getElementById('photoPreview').style.display='none';document.getElementById('photoPlus').style.display='';document.getElementById('photoTxt').textContent='Upload photo';}
   document.getElementById('sfDeleteBtn').style.display='';
-  _photoData=null;
+  _photoData=null; _photoFile=null;
   document.getElementById('staffModal').style.display='flex';
 }
 function handlePhoto(inp){
   const file=inp.files[0]; if(!file)return;
+  _photoFile=file;
   const reader=new FileReader();
   reader.onload=e=>{
     _photoData=e.target.result;
@@ -1800,22 +1798,33 @@ function handlePhoto(inp){
   };
   reader.readAsDataURL(file);
 }
-function saveStaff(){
+async function saveStaff(){
   const name=document.getElementById('sfName').value.trim(); if(!name)return;
   const eid=document.getElementById('sfId').value;
   const role=document.getElementById('sfRole').value;
   const store=document.getElementById('sfStore').value;
   const phone=document.getElementById('sfPhone').value.trim();
+  const saveBtn=document.querySelector('#staffModal .btn-ink');
+  if(saveBtn){saveBtn.textContent='Saving...';saveBtn.disabled=true;}
+  let photoUrl=null;
+  const staffId=eid||('s'+Date.now());
+  if(_photoFile){
+    photoUrl=await uploadPhotoToSupabase(staffId,_photoFile);
+  }
   if(eid){
     const s=S.staff.find(x=>x.id===eid);
-    if(s){s.name=name;s.role=role;s.store=store;s.phone=phone;if(_photoData){s.photo=_photoData;try{localStorage.setItem('sm_photo_'+s.id,_photoData);}catch(e){}}}
+    if(s){
+      s.name=name;s.role=role;s.store=store;s.phone=phone;
+      if(photoUrl)s.photo=photoUrl;
+      else if(_photoData&&!s.photo)s.photo=_photoData;
+    }
   } else {
-    const id='s'+Date.now();
-    const newS={id,name,role,store,phone,photo:_photoData||null};
-    if(_photoData){try{localStorage.setItem('sm_photo_'+id,_photoData);}catch(e){newS.photo=null;}}
+    const newS={id:staffId,name,role,store,phone,photo:photoUrl||_photoData||null};
     S.staff.push(newS);
   }
-  sv(); closeModal('staffModal'); renderHome();
+  sv(); closeModal('staffModal');
+  if(saveBtn){saveBtn.textContent='Save';saveBtn.disabled=false;}
+  renderHome();
   if(S.curId===eid)renderProfile();
 }
 function deleteStaff(){
