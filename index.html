@@ -698,14 +698,19 @@ function renderHome(){
     const stS=storeRevs.reduce((t,r)=>(t+(parseFloat(r.fS)||0)+(parseFloat(r.bS)||0)),0);
     const stCR=stA>0?Math.round(stS/stA*100):null;
 
+    // Separate AM from rest of team
+    const amCard=storeStaff.find(s=>s.role==='Area Manager');
+    const teamCards=storeStaff.filter(s=>s.role!=='Area Manager');
+
     html+=`<div class="showroom-sec">
       <div class="showroom-hdr">
         <span class="showroom-nm">${store}</span>
         <div class="showroom-ln"></div>
         <span class="showroom-meta">${storeStaff.length} staff${stCR!==null?` · Team avg ${stCR}% CR`:''}</span>
       </div>
+      ${amCard?`<div class="cards-row" style="margin-bottom:10px;">${renderCard(amCard)}</div>`:''}
       <div class="cards-row">
-        ${storeStaff.map(s=>renderCard(s)).join('')}
+        ${teamCards.map(s=>renderCard(s)).join('')}
         <div class="add-card" onclick="openAddStaff('${store}')">
           <span>+</span><p>Add to<br>${store}</p>
         </div>
