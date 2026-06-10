@@ -1178,7 +1178,9 @@ function renderMonthlyTab(){
           </div>
         </div>
         <div id="aiContent">${rev.ai
-          ?`<div class="ai-txt" id="aiTxt">${rev.ai}</div><textarea class="ai-editor" id="aiEditor" style="display:none;" onchange="saveAIEdit(this.value)">${rev.ai}</textarea>`
+          ?`<div class="ai-txt" id="aiTxt">${rev.ai}</div>
+             <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);font-size:12px;color:rgba(250,248,244,.5);font-style:italic;line-height:1.7;">Please take a moment to review the personalised sales strategies and coaching examples below — these have been selected specifically for you to help lift your conversion rate.</div>
+             <textarea class="ai-editor" id="aiEditor" style="display:none;" onchange="saveAIEdit(this.value)">${rev.ai}</textarea>`
           :`<div style="font-size:12px;color:rgba(250,248,244,.4);line-height:1.7;">Once weekly assessments are complete, the Area Manager can generate and send the monthly review.</div>`
         }</div>
         <div class="ai-acts" id="aiActs">
@@ -1615,7 +1617,15 @@ async function expPDF(){
     if(y>pageH-16){doc.addPage();y=20;}
     doc.text(line,15,y); y+=5.5;
   });
-  y+=8;
+  y+=6;
+  // Coaching call-to-action
+  doc.setFontSize(8.5); doc.setTextColor(100,90,78); doc.setFont('helvetica','italic');
+  const cta='Please take a moment to review the personalised sales strategies and coaching examples below — these have been selected specifically for you to help lift your conversion rate.';
+  doc.splitTextToSize(cta,pageW-30).forEach(line=>{
+    if(y>pageH-10){doc.addPage();y=20;}
+    doc.text(line,15,y); y+=5;
+  });
+  y+=6;
 
   // Top 3 Lost Sale Patterns only
   const lostCounts=rev.lostReasonCounts||{};
