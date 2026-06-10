@@ -1370,9 +1370,8 @@ async function generateReview(){
   }).join('\n');
 
   const fundAvgs=FUNDS.map(f=>{
-    const key=f.toLowerCase().replace(/[^a-z0-9]/g,'_');
-    const avg=avgRating(s.id,S.curYear,S.curMonth,'fund',key);
-    return avg&&avg!=='nt'?`${f}: ${avg==='ex'?'Excellent':'Needs Work'}`:'';
+    const avg=avgRating(s.id,S.curYear,S.curMonth,'fund',f.key);
+    return avg&&avg!=='nt'?`${f.label}: ${avg==='ex'?'Excellent':'Needs Work'}`:'';
   }).filter(Boolean).join('\n');
 
   const checkedLost=LOST.filter(r=>rev.lostPatterns&&rev.lostPatterns[r.label]);
