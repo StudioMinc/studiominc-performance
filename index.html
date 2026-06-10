@@ -171,8 +171,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .rb.r-nw{background:var(--danger-l);border-color:var(--danger);color:var(--danger);}
 
 /* FUND GRID */
-.fund-grid{display:flex;flex-direction:column;gap:5px;}
-.fi{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--linen);border-radius:6px;background:white;gap:10px;}
+.fund-grid{display:flex;flex-direction:column;gap:6px;}
+.fi{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--linen);border-radius:6px;background:white;gap:10px;flex-wrap:wrap;}
 .fi-lbl{font-size:12px;color:var(--deep);flex:1;}
 .fi-togs{display:flex;gap:4px;flex-shrink:0;}
 .ftog{padding:3px 8px;border-radius:20px;font-size:9px;border:1px solid var(--linen);background:var(--bone);cursor:pointer;color:var(--warm);font-family:'DM Sans',sans-serif;white-space:nowrap;}
@@ -391,10 +391,15 @@ const STEPS=[
 ];
 
 const FUNDS=[
-  'Reliability','Personal Presentation','Drive','Productivity','Time Management',
-  'Appointment Control','Punctuality','Reviews','Locking Up','Daily Texts / Phone',
-  'Showroom Presentation','Running Appointments on Time','Taking Feedback / Listening',
-  'Active Listening & Asking Questions',
+  {key:'attendance',        label:'Attendance',           desc:'Present, on time, dependable'},
+  {key:'personal_presentation', label:'Personal Presentation', desc:'Appearance and grooming'},
+  {key:'drive_productivity',label:'Drive & Productivity', desc:'Self-motivated, uses downtime well'},
+  {key:'appointment_control',label:'Appointment Control', desc:'Manages the pace of appointments in a timely matter'},
+  {key:'appointment_texts', label:'Appointment Texts',    desc:'Day-before and follow-up texts sent on time'},
+  {key:'customer_communication',label:'Customer Communication',desc:'Phone, texts, responsive to enquiries'},
+  {key:'store_cleaning',    label:'Store Cleaning',        desc:'Showroom is clean and presentation-ready'},
+  {key:'closing_procedure', label:'Closing Procedure',    desc:'End of day tasks completed correctly'},
+  {key:'receptiveness',     label:'Receptiveness',        desc:'Takes feedback well, listens actively'},
 ];
 
 const LOST=[
@@ -533,8 +538,18 @@ function curRev(){return getMk(S.curId,S.curYear,S.curMonth);}
 
 function getWeek(id,y,m,wk){
   const rev=getMk(id,y,m);
-  if(!rev.weeks[wk])rev.weeks[wk]={proc:{},fund:{}};
+  if(!rev.weeks[wk])rev.weeks[wk]={proc:{},fund:{},procNotes:{},fundNotes:{}};
+  if(!rev.weeks[wk].procNotes)rev.weeks[wk].procNotes={};
+  if(!rev.weeks[wk].fundNotes)rev.weeks[wk].fundNotes={};
   return rev.weeks[wk];
+}
+function setProcNote(key,val){
+  const wk=getWeek(S.curId,S.curYear,S.curMonth,S.curWeek);
+  wk.procNotes[key]=val; sv();
+}
+function setFundNote(key,val){
+  const wk=getWeek(S.curId,S.curYear,S.curMonth,S.curWeek);
+  wk.fundNotes[key]=val; sv();
 }
 
 // ═══════════════════════════════════════════════
@@ -910,6 +925,8 @@ function renderWeeklyTab(){
   // Sales process ratings
   const procHtml=STEPS.map(step=>{
     const val=wkData.proc[step.key]||'';
+    const note=wkData.procNotes&&wkData.procNotes[step.key]||'';
+    const showNote=val==='gd'||val==='nw';
     return `<tr>
       <td><div class="step-nm">${step.name}</div><div class="step-ds">${step.desc}</div></td>
       <td>
@@ -918,21 +935,29 @@ function renderWeeklyTab(){
           <button class="rb ${val==='gd'?'r-gd':''}" onclick="setRating('proc','${step.key}','gd')">Good</button>
           <button class="rb ${val==='nw'?'r-nw':''}" onclick="setRating('proc','${step.key}','nw')">Needs Work</button>
         </div>
+        ${showNote?`<textarea placeholder="Add a coaching note..." style="width:100%;margin-top:6px;border:1px solid var(--linen);border-radius:5px;padding:6px 8px;font-size:11px;font-family:'DM Sans',sans-serif;background:var(--cream);resize:none;min-height:40px;" onchange="setProcNote('${step.key}',this.value)">${note}</textarea>`:''}
       </td>
     </tr>`;
   }).join('');
 
-  // Fundamentals
+  // Fundamentals — compact single-column with notes
   const fundHtml=FUNDS.map(f=>{
-    const key=f.toLowerCase().replace(/[^a-z0-9]/g,'_');
-    const val=wkData.fund[key]||'';
-    return `<div class="fi">
-      <span class="fi-lbl">${f}</span>
-      <div class="fi-togs">
-        <button class="ftog ${val==='ex'?'f-ex':''}" onclick="setRating('fund','${key}','ex')" title="Excellent">✓ Excellent</button>
-        <button class="ftog ${val==='nt'?'f-nt':''}" onclick="setRating('fund','${key}','nt')" title="Neutral">— Neutral</button>
-        <button class="ftog ${val==='nw'?'f-nw':''}" onclick="setRating('fund','${key}','nw')" title="Needs Work">✗ Needs Work</button>
+    const val=wkData.fund[f.key]||'';
+    const note=wkData.fundNotes&&wkData.fundNotes[f.key]||'';
+    const showNote=val==='nt'||val==='nw';
+    return `<div class="fi" style="flex-direction:column;align-items:flex-start;gap:4px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <div>
+          <span class="fi-lbl" style="font-size:12px;">${f.label}</span>
+          <div style="font-size:10px;color:var(--taupe);">${f.desc}</div>
+        </div>
+        <div class="fi-togs">
+          <button class="ftog ${val==='ex'?'f-ex':''}" onclick="setRating('fund','${f.key}','ex')">✓ Excellent</button>
+          <button class="ftog ${val==='nt'?'f-nt':''}" onclick="setRating('fund','${f.key}','nt')">— Neutral</button>
+          <button class="ftog ${val==='nw'?'f-nw':''}" onclick="setRating('fund','${f.key}','nw')">✗ Needs Work</button>
+        </div>
       </div>
+      ${showNote?`<textarea placeholder="Add a note..." style="width:100%;border:1px solid var(--linen);border-radius:5px;padding:6px 8px;font-size:11px;font-family:'DM Sans',sans-serif;background:var(--cream);resize:none;min-height:36px;" onchange="setFundNote('${f.key}',this.value)">${note}</textarea>`:''}
     </div>`;
   }).join('');
 
@@ -1037,11 +1062,10 @@ function renderMonthlyTab(){
       <div class="rsec-head"><span class="rsec-title">Fundamentals — Monthly Average</span><div class="rsec-line"></div></div>
       <div class="fund-grid">
         ${FUNDS.map(f=>{
-          const key=f.toLowerCase().replace(/[^a-z0-9]/g,'_');
-          const avg=avgRating(s.id,S.curYear,S.curMonth,'fund',key);
+          const avg=avgRating(s.id,S.curYear,S.curMonth,'fund',f.key);
           const cls=avg==='ex'?'f-ex':avg==='gd'?'f-nt':avg==='nw'?'f-nw':'';
           const lbl=avg==='ex'?'Excellent':avg==='gd'?'Good':avg==='nw'?'Needs Work':'No data';
-          return`<div class="fi"><span class="fi-lbl">${f}</span><span class="ftog ${cls}" style="cursor:default;">${lbl}</span></div>`;
+          return`<div class="fi"><span class="fi-lbl">${f.label}</span><span class="ftog ${cls}" style="cursor:default;">${lbl}</span></div>`;
         }).join('')}
       </div>
     </div>`;
