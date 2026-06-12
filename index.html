@@ -340,7 +340,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   <div class="home-wrap">
     <div class="home-hdr">
       <div><div class="home-title">Showrooms</div><div class="home-sub" id="homeSub"></div></div>
-      ${currentUser?.role==='Area Manager'?`<button class="btn btn-ink" onclick="openAddStaff(null)">+ Add Staff</button>`:''}
+      <button class="btn btn-ink" id="addStaffBtn" onclick="openAddStaff(null)" style="display:none;">+ Add Staff</button>
     </div>
     <div id="homeContent"></div>
   </div>
@@ -761,6 +761,8 @@ function showHome(){
 
 function renderHome(){
   document.getElementById('homeSub').textContent=`${MONTHS[S.curMonth-1]} ${S.curYear} · Click a staff member to open their profile`;
+  const addBtn=document.getElementById('addStaffBtn');
+  if(addBtn)addBtn.style.display=currentUser?.role==='Area Manager'?'':'none';
   const container=document.getElementById('homeContent');
   let html='';
 
