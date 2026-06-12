@@ -291,6 +291,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     <div class="login-sub">Select your name and enter your PIN</div>
     <select class="login-select" id="loginName" onchange="resetPin()">
       <option value="">Select your name...</option>
+      <option value="madeleine">Madeleine</option>
       <option value="morgan">Morgan</option>
       <option value="rhi">Rhi</option>
       <option value="maya">Maya</option>
@@ -424,9 +425,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 // PIN AUTH
 // ═══════════════════════════════════════════════
 const USERS={
-  morgan:{pin:'2608',role:'Area Manager',store:null,name:'Morgan'},
-  rhi:   {pin:'2202',role:'Team Leader', store:'Gold Coast',name:'Rhi'},
-  maya:  {pin:'3007',role:'Team Leader', store:'Sydney',name:'Maya'},
+  morgan:    {pin:'2608',role:'Area Manager',store:null,name:'Morgan'},
+  madeleine: {pin:'1202',role:'Area Manager',store:null,name:'Madeleine'},
+  rhi:       {pin:'2202',role:'Team Leader', store:'Gold Coast',name:'Rhi'},
+  maya:      {pin:'3007',role:'Team Leader', store:'Sydney',name:'Maya'},
 };
 let currentUser=null;
 let pinEntry='';
