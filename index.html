@@ -15,7 +15,24 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;font-size:13px;}
 
-/* NAV */
+/* LOGIN */
+.login-page{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:1000;flex-direction:column;gap:0;}
+.login-card{width:100%;max-width:360px;padding:40px 32px;}
+.login-brand{font-family:'Century Gothic','CenturyGothic',sans-serif;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:rgba(250,248,244,.4);margin-bottom:40px;}
+.login-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:var(--cream);margin-bottom:4px;}
+.login-sub{font-size:12px;color:rgba(250,248,244,.4);margin-bottom:32px;}
+.login-select{width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.06);color:var(--cream);font-size:14px;font-family:'DM Sans',sans-serif;margin-bottom:12px;appearance:none;}
+.login-select option{background:#1C1710;color:var(--cream);}
+.pin-row{display:flex;gap:10px;margin-bottom:20px;}
+.pin-dot{width:52px;height:52px;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--cream);transition:all .15s;}
+.pin-dot.filled{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);}
+.pin-dot.error{border-color:var(--danger);background:rgba(196,80,80,.15);}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.pin-key{height:52px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.05);color:var(--cream);font-size:18px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;}
+.pin-key:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);}
+.pin-key:active{background:rgba(255,255,255,.18);transform:scale(.95);}
+.pin-key.del{font-size:14px;color:rgba(250,248,244,.5);}
+.login-err{font-size:12px;color:var(--danger);text-align:center;min-height:18px;margin-bottom:8px;}
 .nav{background:var(--ink);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:300;}
 .nav-brand{font-family:'Century Gothic','CenturyGothic','AppleGothic',sans-serif;font-size:12px;font-weight:400;letter-spacing:.28em;text-transform:uppercase;color:var(--cream);cursor:pointer;}
 .nav-brand em{font-size:9px;letter-spacing:.2em;color:#888;margin-left:10px;font-style:normal;}
@@ -266,7 +283,36 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 </head>
 <body>
 
-<!-- NAV -->
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="login-page">
+  <div class="login-card">
+    <div class="login-brand">Studio &nbsp; Minc</div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-sub">Select your name and enter your PIN</div>
+    <select class="login-select" id="loginName" onchange="resetPin()">
+      <option value="">Select your name...</option>
+      <option value="morgan">Morgan</option>
+      <option value="rhi">Rhi</option>
+      <option value="maya">Maya</option>
+    </select>
+    <div class="pin-row" id="pinDots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="login-err" id="loginErr"></div>
+    <div class="pin-keypad">
+      ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="pin-key" onclick="pinPress('${n}')">${n}</button>`).join('')}
+      <div></div>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none;">
 <nav class="nav">
   <div class="nav-brand" onclick="showHome()">STUDIO &nbsp; MINC <em>Performance</em></div>
   <div class="nav-r">
@@ -276,6 +322,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
     </div>
     <button class="nb" onclick="manualSync()">↻ Sync</button>
     <button class="nb nb-gold" onclick="openSupaModal()">Supabase</button>
+    <button class="nb" onclick="doLogout()" style="color:rgba(250,248,244,.5);">Sign out</button>
   </div>
 </nav>
 
@@ -284,7 +331,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   <div class="home-wrap">
     <div class="home-hdr">
       <div><div class="home-title">Showrooms</div><div class="home-sub" id="homeSub"></div></div>
-      <button class="btn btn-ink" onclick="openAddStaff(null)">+ Add Staff</button>
+      ${currentUser?.role==='Area Manager'?`<button class="btn btn-ink" onclick="openAddStaff(null)">+ Add Staff</button>`:''}
     </div>
     <div id="homeContent"></div>
   </div>
@@ -370,7 +417,78 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   <button class="slnk" onclick="openSupaModal()">Configure Supabase</button>
 </div>
 
+</div><!-- end mainApp -->
+
 <script>
+// ═══════════════════════════════════════════════
+// PIN AUTH
+// ═══════════════════════════════════════════════
+const USERS={
+  morgan:{pin:'2608',role:'Area Manager',store:null,name:'Morgan'},
+  rhi:   {pin:'2202',role:'Team Leader', store:'Gold Coast',name:'Rhi'},
+  maya:  {pin:'3007',role:'Team Leader', store:'Sydney',name:'Maya'},
+};
+let currentUser=null;
+let pinEntry='';
+
+function pinPress(n){
+  if(!document.getElementById('loginName').value){
+    document.getElementById('loginErr').textContent='Please select your name first';return;
+  }
+  if(pinEntry.length>=4)return;
+  pinEntry+=n;
+  updatePinDots();
+  if(pinEntry.length===4)setTimeout(checkPin,120);
+}
+function pinDel(){
+  pinEntry=pinEntry.slice(0,-1);
+  document.getElementById('loginErr').textContent='';
+  updatePinDots();
+}
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    const dot=document.getElementById('pd'+i);
+    dot.textContent=i<pinEntry.length?'●':'';
+    dot.classList.toggle('filled',i<pinEntry.length);
+    dot.classList.remove('error');
+  }
+}
+function resetPin(){
+  pinEntry='';
+  document.getElementById('loginErr').textContent='';
+  updatePinDots();
+}
+function checkPin(){
+  const nameKey=document.getElementById('loginName').value;
+  const user=USERS[nameKey];
+  if(!user){return;}
+  if(pinEntry===user.pin){
+    currentUser=user;
+    localStorage.setItem('sm_user',JSON.stringify(user));
+    document.getElementById('loginPage').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+    init();
+  } else {
+    pinEntry='';
+    document.getElementById('loginErr').textContent='Incorrect PIN — try again';
+    for(let i=0;i<4;i++){
+      document.getElementById('pd'+i).classList.add('error');
+      document.getElementById('pd'+i).textContent='';
+    }
+    setTimeout(()=>{
+      for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.remove('error');
+    },600);
+  }
+}
+function doLogout(){
+  currentUser=null;
+  pinEntry='';
+  document.getElementById('loginName').value='';
+  resetPin();
+  document.getElementById('loginPage').style.display='flex';
+  document.getElementById('mainApp').style.display='none';
+}
+// Always show login on load - never persist session
 // ═══════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════
@@ -638,7 +756,7 @@ function renderHome(){
 
   // Area Manager banner
   const am=S.staff.find(s=>s.role==='Area Manager');
-  if(am){
+  if(am&&currentUser?.role==='Area Manager'){
     const amRevs=S.staff.filter(s=>s.role!=='Area Manager').map(s=>getMk(s.id,S.curYear,S.curMonth));
     const totalA=amRevs.reduce((t,r)=>(t+(parseFloat(r.fA)||0)+(parseFloat(r.bA)||0)),0);
     const totalS=amRevs.reduce((t,r)=>(t+(parseFloat(r.fS)||0)+(parseFloat(r.bS)||0)),0);
@@ -662,7 +780,12 @@ function renderHome(){
   }
 
   // Showrooms
-  STORES.forEach(store=>{
+  // Filter stores based on logged in user
+  const visibleStores=currentUser?.role==='Team Leader'
+    ?STORES.filter(s=>s===currentUser.store)
+    :STORES;
+
+  visibleStores.forEach(store=>{
     const storeStaff=S.staff
       .filter(s=>s.store===store&&(s.role!=='Area Manager'||s.store===store))
       .sort((a,b)=>{
