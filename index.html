@@ -1747,15 +1747,31 @@ let _photoFile=null;
 async function uploadPhotoToSupabase(staffId,file){
   const u=localStorage.getItem(SUK),k=localStorage.getItem(SKK);
   if(!u||!k||!file)return null;
-  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z]/g,'');
   const path=`${staffId}.${ext}`;
-  const res=await fetch(`${u}/storage/v1/object/staff-photos/${path}`,{
-    method:'POST',
-    headers:{'apikey':k,'Authorization':`Bearer ${k}`,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},
-    body:file,
-  });
-  if(!res.ok){console.error('Photo upload failed',await res.text());return null;}
-  return`${u}/storage/v1/object/public/staff-photos/${path}`;
+  try{
+    // Use multipart form upload
+    const formData=new FormData();
+    formData.append('',file,path);
+    const res=await fetch(`${u}/storage/v1/object/staff-photos/${path}`,{
+      method:'POST',
+      headers:{
+        'apikey':k,
+        'Authorization':`Bearer ${k}`,
+        'x-upsert':'true',
+      },
+      body:file,
+    });
+    const txt=await res.text();
+    console.log('Upload response:',res.status,txt);
+    if(!res.ok){console.error('Upload failed:',txt);return null;}
+    const publicUrl=`${u}/storage/v1/object/public/staff-photos/${path}`;
+    console.log('Photo uploaded to:',publicUrl);
+    return publicUrl;
+  }catch(e){
+    console.error('Upload error:',e);
+    return null;
+  }
 }
 function openAddStaff(store){
   document.getElementById('staffModalTitle').textContent='Add Staff Member';
