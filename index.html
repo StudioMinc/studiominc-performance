@@ -2057,7 +2057,8 @@ async function syncSupa(){
       if(isBridal){d.bA++;if(isSold)d.bS++;}
       else{d.fA++;if(isSold)d.fS++;}
       if(outcome&&outcome!=='EMPTY'&&!isSold&&a.reason&&a.reason!=='EMPTY'){
-        d.lostReasons[a.reason]=(d.lostReasons[a.reason]||0)+1;
+        const reason=a.reason.trim();
+        d.lostReasons[reason]=(d.lostReasons[reason]||0)+1;
       }
     });
 
@@ -2076,7 +2077,8 @@ async function syncSupa(){
       rev.fA=d.fA;rev.fS=d.fS;rev.bA=d.bA;rev.bS=d.bS;
       if(!rev.lostPatterns)rev.lostPatterns={};
       Object.entries(d.lostReasons).forEach(([reason])=>{
-        const match=LOST.find(l=>l.label.toLowerCase()===reason.toLowerCase());
+        const match=LOST.find(l=>l.label.toLowerCase()===reason.toLowerCase())||
+                    LOST.find(l=>reason.toLowerCase().includes(l.label.toLowerCase().slice(0,10)));
         if(match)rev.lostPatterns[match.label]=true;
       });
       rev.lostReasonCounts=d.lostReasons;
